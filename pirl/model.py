@@ -8,6 +8,33 @@ from ray.rllib.utils.typing import TensorType
 
 from pirl.train import init_params
 
+"""TODO(chaejin)
+1. remove obsolete models, or codes
+2. remove duplicate lines
+e.g. you can turn this
+        self.conv1_2 = convrelu(16, 16)
+        self.conv1_3 = convrelu(16, 16)
+        self.conv1_4 = convrelu(16, 16)
+        self.conv1_5 = convrelu(16, 16)
+        self.conv1_6 = convrelu(16, 16)
+        self.pool_1 = nn.MaxPool1d(2)  # non-Uniform
+    
+    into
+        self.conv_block1 = convblock(16, 2)
+    
+    and
+    
+    maybe somehow modity UQNet in a way that, 
+    only passing some arguments into UQNet, you get ShallowUQNet
+    
+    e.g.
+    shallow_uqnet = UQNet(shallow_arguments)    
+    
+    but be careful when you do refactoring, a bug in model might affect 
+    hugely on the result 
+"""
+
+
 
 class convrelu(nn.Module):
     def __init__(self, nin, nout):
