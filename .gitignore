@@ -3,8 +3,8 @@
 .vscode
 .idea
 .DS_Store
-UNet/data
-UNet/experiments
+data
+pretrained_models
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
