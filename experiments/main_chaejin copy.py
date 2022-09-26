@@ -181,16 +181,16 @@ if __name__== '__main__':
         # import pdb; pdb.set_trace() ml2
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         # q = network.UQnet(int(args.ncells))
-        q = network.UQnet(int(args.ncells)).to(device) # ml2
-        q_target = network.UQnet(int(args.ncells))
+        q = network.UQNet(int(args.ncells)).to(device) # ml2
+        q_target = network.UQNet(int(args.ncells))
         # q_target.load_state_dict(q.state_dict())
         q_target.load_state_dict(q.state_dict()) # ml2
         q_target = q_target.to(device)
 
     elif args.network =='UQnet':
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        q = network.UQnet(int(args.ncells)).to(device) #cj
-        q_target = network.UQnet(int(args.ncells)).to(device) #cj
+        q = network.UQNet(int(args.ncells)).to(device) #cj
+        q_target = network.UQNet(int(args.ncells)).to(device) #cj
         q.load_state_dict(torch.load(f'{CURR_DIR}/UNet/July5_256_7man_1100_70_0.00150431_0.00243219_stateDict.pt',map_location=device))
         q_target.load_state_dict(torch.load(f'{CURR_DIR}/UNet/July5_256_7man_1100_70_0.00150431_0.00243219_stateDict.pt',map_location=device))
 

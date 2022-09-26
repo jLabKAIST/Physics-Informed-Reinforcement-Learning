@@ -46,8 +46,7 @@ def train_network(q, q_target, memory, optimizer, train_number, batch_size,
             with torch.no_grad():
                 max_q_prime = output_of_target.max(1)[0].unsqueeze(1)
 
-        target = done_mask * (r + gamma * max_q_prime) + (1 - done_mask) * 1 / (
-                    1 - gamma) * r
+        target = done_mask * (r + gamma * max_q_prime) + (1 - done_mask) * 1 / (1 - gamma) * r
         loss = F.smooth_l1_loss(q_a, target)  # huber loss
 
         optimizer.zero_grad()

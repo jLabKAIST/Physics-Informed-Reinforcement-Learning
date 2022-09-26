@@ -3,9 +3,14 @@ import time
 from pathlib import Path
 
 import gym
-import matlab.engine
 import matplotlib.pyplot as plt
 import numpy as np
+
+try:
+    import matlab.engine
+except:
+    pass
+    # raise Warning('matlab python API not installed')
 
 RETICOLO_MATLAB = os.path.join(Path().absolute(), 'third_party/reticolo_allege')
 SOLVER_MATLAB = os.path.join(Path().absolute(), 'third_party/solvers')
@@ -43,7 +48,6 @@ class ReticoloDeflector(gym.Env):
         self.eff_table = eff_table
 
         os.makedirs('runs', exist_ok=True)
-
 
     @property
     def config_str(self):
@@ -109,17 +113,18 @@ class DummyEnv(gym.Env):
         super().__init__()
         self.observation_space = gym.spaces.Box(
             low=-1., high=1.,
-            shape=(kwargs['n_cells'],),
-            dtype=np.float64
+            shape=(1, kwargs['n_cells']),
+            dtype=np.float32
         )
         self.action_space = gym.spaces.Discrete(kwargs['n_cells'])
+
     def reset(self):
-        return np.ones((256,))
+        return self.observation_space.sample()
 
     def step(self, action):
         time.sleep(0.01)
 
-        return np.ones((256,)), 0.1, False, {}
+        return self.observation_space.sample(), 0.1, False, {}
 
     def render(self):
         pass

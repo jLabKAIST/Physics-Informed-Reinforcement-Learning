@@ -10,7 +10,7 @@ import matplotlib
 import numpy as np
 
 from pirl import log_utils
-from pirl.model import Qnet, UQnet, ShallowUQnet, DuelingQnet
+from pirl.networks import Qnet, UQNet, ShallowUQnet, DuelingQnet
 from pirl.train import train_network, merge_network_weights
 from pirl.replaybuffer import ReplayBuffer
 
@@ -180,8 +180,8 @@ if __name__ == '__main__':
 
     elif args.network == 'UQnet':
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        q = UQnet(int(args.ncells))
-        q_target = UQnet(int(args.ncells))
+        q = UQNet(int(args.ncells))
+        q_target = UQNet(int(args.ncells))
         q.load_state_dict(torch.load(
             'July5_256_7man_1100_70_0.00150431_0.00243219_stateDict.pt',
             map_location=device))
@@ -191,8 +191,8 @@ if __name__ == '__main__':
 
     elif args.network == 'UQnet_notrain':
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        q = UQnet(int(args.ncells))
-        q_target = UQnet(int(args.ncells))
+        q = UQNet(int(args.ncells))
+        q_target = UQNet(int(args.ncells))
         q_target.load_state_dict(q.state_dict())
 
     if args.network == 'Double' or args.network == 'Dueling':

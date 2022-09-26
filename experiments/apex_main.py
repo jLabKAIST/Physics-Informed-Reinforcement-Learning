@@ -4,7 +4,7 @@ from ray.rllib.models import ModelCatalog
 from ray.rllib.utils.framework import try_import_torch
 
 from pirl.env import ReticoloDeflector
-from pirl.model import UNet
+from pirl.networks import UNet
 
 torch, nn = try_import_torch()
 

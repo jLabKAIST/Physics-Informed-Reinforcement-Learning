@@ -158,7 +158,7 @@ class UNet(TorchModelV2, nn.Module):
     # def forward(self, img):
     def forward(self, input_dict, state, seq_lens):
         img = input_dict['obs']
-
+        # print(img)
         res1_1 = self.conv1_1(img)
         temp = self.conv1_2(res1_1)
         temp = self.conv1_3(temp) + res1_1  ## sum
@@ -244,6 +244,7 @@ class UNet(TorchModelV2, nn.Module):
         temp = self.conv11_6(temp) + res11_2
 
         temp = self.conv11_fin(temp)
+        temp = temp.flatten(1)
 
         action_logits = temp
         self._value_logits = temp.argmax()
@@ -330,9 +331,9 @@ class Qnet(nn.Module):
             return out.argmax().item()
 
 
-class UQnet(nn.Module):
+class UQNet(nn.Module):
     def __init__(self, ncells):
-        super(UQnet, self).__init__()
+        super(UQNet, self).__init__()
         self.effdata = []
         self.score_sum = []
         self.score_init_final = []
