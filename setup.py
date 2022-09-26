@@ -8,7 +8,7 @@ setup(
     author_email='contact@jlab.com', # TODO(jlab)
     packages=find_packages(),
     install_requires=[
-        'gym',
+        'gym<0.26.0',
         'ray[rllib]',
     ],
     python_requires='>=3.8'

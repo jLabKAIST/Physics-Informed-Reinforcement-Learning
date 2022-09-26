@@ -35,7 +35,6 @@ e.g. you can turn this
 """
 
 
-
 class convrelu(nn.Module):
     def __init__(self, nin, nout):
         super().__init__()
@@ -751,5 +750,3 @@ class DuelingQnet(nn.Module):
             return np.random.randint(0, self.ncells)
         else:
             return out.argmax().item()
-
-

@@ -3,6 +3,7 @@
 .vscode
 .idea
 .DS_Store
+.
 data
 pretrained_models
 

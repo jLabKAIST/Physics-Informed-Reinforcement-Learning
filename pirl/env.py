@@ -105,16 +105,21 @@ class ReticoloDeflector(gym.Env):
 
 
 class DummyEnv(gym.Env):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__()
-
+        self.observation_space = gym.spaces.Box(
+            low=-1., high=1.,
+            shape=(kwargs['n_cells'],),
+            dtype=np.float64
+        )
+        self.action_space = gym.spaces.Discrete(kwargs['n_cells'])
     def reset(self):
-        return np.ones((256,)), {}
+        return np.ones((256,))
 
     def step(self, action):
         time.sleep(0.01)
 
-        return np.ones((256,)), 0.1, False, False, {}
+        return np.ones((256,)), 0.1, False, {}
 
     def render(self):
         pass

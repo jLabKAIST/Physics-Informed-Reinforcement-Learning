@@ -1,6 +1,6 @@
-import network
-from replaybuffer import ReplayBuffer
-import logger
+import pirl.model
+from pirl.replaybuffer import ReplayBuffer
+import pirl.log_utils
 import time
 
 import gym
@@ -149,9 +149,9 @@ if __name__== '__main__':
 
         
     if args.env == 'reticolo':
-        from deflector_reticolo import CustomEnv
-        env = CustomEnv(int(args.ncells), args.wl, args.ang)
-        env_val = CustomEnv(int(args.ncells), args.wl, args.ang)
+        from pirl.env import ReticoloDeflector
+        env = ReticoloDeflector(int(args.ncells), args.wl, args.ang)
+        env_val = ReticoloDeflector(int(args.ncells), args.wl, args.ang)
    
     elif args.env == 'S4':
         from deflector_S4 import CustomEnv
@@ -160,53 +160,53 @@ if __name__== '__main__':
 
 
 
-    if args.network=='FCN_notrain' or args.network=='Double':
+    if args.model=='FCN_notrain' or args.model=='Double':
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') ## 8/30
-        q = network.Qnet(int(args.ncells)).to(device) 
-        q_target = network.Qnet(int(args.ncells))
+        q = model.Qnet(int(args.ncells)).to(device)
+        q_target = model.Qnet(int(args.ncells))
         q_target.load_state_dict(q.state_dict())
         q_target = q_target.to(device)
     
-    elif args.network=='FCN':  ## 9/3 chaejin 아예 추가함
+    elif args.model=='FCN':  ## 9/3 chaejin 아예 추가함
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') 
-        q = network.Qnet(int(args.ncells)).to(device) #cj
-        q_target = network.Qnet(int(args.ncells)).to(device) #cj
+        q = model.Qnet(int(args.ncells)).to(device) #cj
+        q_target = model.Qnet(int(args.ncells)).to(device) #cj
         q.load_state_dict(torch.load(f'{CURR_DIR}/UNet/Aug29_fcn_256_2man_1100_70_0.00619343_0.00632467_stateDict.pt',map_location=device)) 
         q_target.load_state_dict(torch.load(f'{CURR_DIR}./UNet/Aug29_fcn_256_2man_1100_70_0.00619343_0.00632467_stateDict.pt',map_location=device)) 
         #q.load_state_dict(torch.load(f'{CURR_DIR}/UNet/Aug29_fcn_256_2man_1100_70_0.00619343_0.00632467_stateDict.pt'))
         #q_target.load_state_dict(torch.load(f'{CURR_DIR}./UNet/Aug29_fcn_256_2man_1100_70_0.00619343_0.00632467_stateDict.pt')) 
 
-    elif args.network =='UQnet_notrain':
+    elif args.model =='UQnet_notrain':
         # import pdb; pdb.set_trace() ml2
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        # q = network.UQnet(int(args.ncells))
-        q = network.UQnet(int(args.ncells)).to(device) # ml2
-        q_target = network.UQnet(int(args.ncells))
+        # q = model.UQnet(int(args.ncells))
+        q = model.UQnet(int(args.ncells)).to(device) # ml2
+        q_target = model.UQnet(int(args.ncells))
         # q_target.load_state_dict(q.state_dict())
         q_target.load_state_dict(q.state_dict()) # ml2
         q_target = q_target.to(device)
 
-    elif args.network =='UQnet':
+    elif args.model =='UQnet':
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        q = network.UQnet(int(args.ncells)).to(device) #cj
-        q_target = network.UQnet(int(args.ncells)).to(device) #cj
+        q = model.UQnet(int(args.ncells)).to(device) #cj
+        q_target = model.UQnet(int(args.ncells)).to(device) #cj
         q.load_state_dict(torch.load(f'{CURR_DIR}/UNet/July5_256_7man_1100_70_0.00150431_0.00243219_stateDict.pt',map_location=device))
         q_target.load_state_dict(torch.load(f'{CURR_DIR}/UNet/July5_256_7man_1100_70_0.00150431_0.00243219_stateDict.pt',map_location=device))
 
-    elif args.network =='ShallowUQnet':
+    elif args.model =='ShallowUQnet':
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         #torch.cuda.set_device(1)
-        q = network.ShallowUQnet(int(args.ncells)).to(device) #cj
-        q_target = network.ShallowUQnet(int(args.ncells)).to(device) #cj
+        q = model.ShallowUQnet(int(args.ncells)).to(device) #cj
+        q_target = model.ShallowUQnet(int(args.ncells)).to(device) #cj
         q.load_state_dict(torch.load(f'{CURR_DIR}/UNet/Aug29_ShallowUNet_256_2man_1100_70_0.00619343_0.00632467_stateDict.pt',map_location=device))
         q_target.load_state_dict(torch.load(f'{CURR_DIR}/UNet/Aug29_ShallowUNet_256_2man_1100_70_0.00619343_0.00632467_stateDict.pt',map_location=device))
 
-    elif args.network =='Dueling':
-        q = network.DuelingQnet(int(args.ncells))
-        q_target = network.DuelingQnet(int(args.ncells))
+    elif args.model =='Dueling':
+        q = model.DuelingQnet(int(args.ncells))
+        q_target = model.DuelingQnet(int(args.ncells))
         q_target.load_state_dict(q.state_dict())
         
-    if args.network=='Double' or args.network=='Dueling':
+    if args.model=='Double' or args.model=='Dueling':
         double=True
     else:
         double=False
@@ -245,7 +245,7 @@ if __name__== '__main__':
     if args.source_code_save == True:
         shutil.copy(os.getcwd()+'/UNet/main_chaejin.py',filepath+path_logs+'main_chaejin.py')
         shutil.copy(os.getcwd()+'/UNet/logger.py',filepath+path_logs+'logger.py')
-        shutil.copy(os.getcwd()+'/UNet/network.py',filepath+path_logs+'network.py')
+        shutil.copy(os.getcwd()+'/UNet/model.py',filepath+path_logs+'model.py')
         shutil.copy(os.getcwd()+'/UNet/deflector_reticolo.py',filepath+path_logs+'deflector_reticolo.py')
         shutil.copy(os.getcwd()+'/UNet/replaybuffer.py',filepath+path_logs+'replaybuffer.py')
 

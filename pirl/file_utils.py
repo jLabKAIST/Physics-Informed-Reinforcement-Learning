@@ -15,3 +15,4 @@ def load_eff_table(filename):
                 raise RuntimeError('Unknown extension')
 
     return eff_table
+

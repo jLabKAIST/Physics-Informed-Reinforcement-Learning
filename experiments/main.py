@@ -258,7 +258,7 @@ if __name__ == '__main__':
     init_time = time.process_time()
 
     # Overall Training Process
-    while (True):
+    while True:
         s, eff_init = env.reset()
         done = False
         eff_epi_st = np.zeros((int(args.epilen), 1))
@@ -308,10 +308,13 @@ if __name__ == '__main__':
                     and count % int(args.train_step) == 0):
 
                 q.train()
-                loss = train_network(q, q_target, memory, optimizer,
-                                                int(args.train_num), \
-                                                int(args.batch_size),
-                                                args.gamma, double=double)
+                loss = train_network(
+                    q, q_target,
+                    memory, optimizer,
+                    int(args.train_num),
+                    int(args.batch_size),
+                    args.gamma, double=double
+                )
 
                 if count % int(args.merge_step) == 0:
                     merge_network_weights(
