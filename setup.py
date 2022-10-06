@@ -10,6 +10,7 @@ setup(
     install_requires=[
         'gym<0.26.0',
         'ray[rllib]',
+        'matlabengine==9.12',
     ],
     python_requires='>=3.8'
 )

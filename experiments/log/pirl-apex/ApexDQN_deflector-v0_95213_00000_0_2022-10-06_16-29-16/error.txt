@@ -1,0 +1,45 @@
+Failure # 1 (occurred at 2022-10-06_16-29-33)
+Traceback (most recent call last):
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/tune/execution/ray_trial_executor.py", line 989, in get_next_executor_event
+    future_result = ray.get(ready_future)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/_private/client_mode_hook.py", line 105, in wrapper
+    return func(*args, **kwargs)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/_private/worker.py", line 2277, in get
+    raise value
+ray.exceptions.RayActorError: The actor died because of an error raised in its creation task, [36mray::ApexDQN.__init__()[39m (pid=1391113, ip=143.248.153.115, repr=ApexDQN)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/evaluation/worker_set.py", line 125, in __init__
+    self.add_workers(
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/evaluation/worker_set.py", line 269, in add_workers
+    self.foreach_worker(lambda w: w.assert_healthy())
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/evaluation/worker_set.py", line 391, in foreach_worker
+    remote_results = ray.get([w.apply.remote(func) for w in self.remote_workers()])
+ray.exceptions.RayActorError: The actor died because of an error raised in its creation task, [36mray::RolloutWorker.__init__()[39m (pid=1391214, ip=143.248.153.115, repr=<ray.rllib.evaluation.rollout_worker.RolloutWorker object at 0x7f605a1b0400>)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/evaluation/rollout_worker.py", line 613, in __init__
+    self._build_policy_map(
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/evaluation/rollout_worker.py", line 1784, in _build_policy_map
+    self.policy_map.create_policy(
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/policy/policy_map.py", line 123, in create_policy
+    self[policy_id] = create_policy_for_framework(
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/utils/policy.py", line 80, in create_policy_for_framework
+    return policy_class(observation_space, action_space, merged_config)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/policy/policy_template.py", line 282, in __init__
+    self.model, dist_class = make_model_and_action_dist(
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/algorithms/dqn/dqn_torch_policy.py", line 182, in build_q_model_and_distribution
+    model = ModelCatalog.get_model_v2(
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/models/catalog.py", line 482, in get_model_v2
+    raise ValueError(
+ValueError: `model_cls` must be a ModelV2 sub-class, but is <class 'pirl.networks.ShallowUQnet'>!
+
+During handling of the above exception, another exception occurred:
+
+[36mray::ApexDQN.__init__()[39m (pid=1391113, ip=143.248.153.115, repr=ApexDQN)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/algorithms/algorithm.py", line 308, in __init__
+    super().__init__(config=config, logger_creator=logger_creator, **kwargs)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/tune/trainable/trainable.py", line 157, in __init__
+    self.setup(copy.deepcopy(self.config))
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/algorithms/apex_dqn/apex_dqn.py", line 349, in setup
+    super().setup(config)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/algorithms/algorithm.py", line 443, in setup
+    raise e.args[0].args[2]
+ValueError: `model_cls` must be a ModelV2 sub-class, but is <class 'pirl.networks.ShallowUQnet'>!
+

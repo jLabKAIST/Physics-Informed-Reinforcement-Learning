@@ -3,7 +3,7 @@ from ray.rllib.agents.ppo import ddppo
 from ray.rllib.models import ModelCatalog
 from ray.rllib.utils.framework import try_import_torch
 
-from pirl.env import ReticoloDeflector
+from pirl.envs.reticolo_env import ReticoloEnv
 from pirl.networks import UNet
 
 torch, nn = try_import_torch()
@@ -40,7 +40,7 @@ if __name__ == '__main__':
     ModelCatalog.register_custom_model("model", UNet)
     config = ddppo.DEFAULT_CONFIG
     env_id = "deflector-v0"
-    tune.register_env(env_id, ReticoloDeflector)
+    tune.register_env(env_id, ReticoloEnv)
     config['env'] = env_id
 
     stop = {

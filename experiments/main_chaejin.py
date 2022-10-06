@@ -1,9 +1,6 @@
-import pirl.networks
 from pirl.replaybuffer import ReplayBuffer
-import pirl.log_utils
 import time
 
-import gym
 import numpy as np
 import argparse
 import os
@@ -19,12 +16,9 @@ import pirl.train
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-from pathlib import Path
 import torch
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
-
-import random
 
 from pathlib import Path
 CURR_DIR = Path().absolute()
@@ -149,9 +143,10 @@ if __name__== '__main__':
 
         
     if args.env == 'reticolo':
-        from pirl.env import ReticoloDeflector
-        env = ReticoloDeflector(int(args.ncells), args.wl, args.ang)
-        env_val = ReticoloDeflector(int(args.ncells), args.wl, args.ang)
+        from pirl.envs.reticolo_env import ReticoloEnv
+
+        env = ReticoloEnv(int(args.ncells), args.wl, args.ang)
+        env_val = ReticoloEnv(int(args.ncells), args.wl, args.ang)
    
     elif args.env == 'S4':
         from deflector_S4 import CustomEnv

@@ -10,7 +10,7 @@ import matplotlib
 import numpy as np
 
 from pirl import log_utils
-from pirl.networks import Qnet, UQNet, ShallowUQnet, DuelingQnet
+from pirl.networks import Qnet, UQNet, DuelingQnet
 from pirl.train import train_network, merge_network_weights
 from pirl.replaybuffer import ReplayBuffer
 
@@ -155,10 +155,10 @@ if __name__ == '__main__':
         writer = SummaryWriter(filepath + path_logs)
 
     if args.env == 'reticolo':
-        from pirl.env import ReticoloDeflector
+        from pirl.envs.reticolo_env import ReticoloEnv
 
-        env = ReticoloDeflector(int(args.ncells), args.wl, args.ang)
-        env_val = ReticoloDeflector(int(args.ncells), args.wl, args.ang)
+        env = ReticoloEnv(int(args.ncells), args.wl, args.ang)
+        env_val = ReticoloEnv(int(args.ncells), args.wl, args.ang)
 
     elif args.env == 'S4':
         from deflector_S4 import ReticoloDeflector
