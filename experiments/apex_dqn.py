@@ -15,6 +15,7 @@ from tqdm import tqdm
 from experiments.utils import load_pretrained
 from pirl._networks import ShallowUQnet
 from pirl.envs.reticolo_env import ReticoloEnv
+from pirl.envs.meent_env import MeentEnv
 
 NUM_GPUS = 1
 ENV_ID = "deflector-v0"
@@ -41,7 +42,7 @@ config.framework(
     # target_network_update_freq=2000,
 ).rollouts(
     num_rollout_workers=32,
-    num_envs_per_worker=4,
+    num_envs_per_worker=6,
 )
 #     replay_buffer_config={
 #         "_enable_replay_buffer_api": True,
@@ -88,9 +89,11 @@ config.framework(
 #     MyCallbacks
 # )
 
-
+from pirl.envs.meent_env import DirectionEnv
 def make_env(**env_config):
-    env = ReticoloEnv(**env_config)
+
+    #env = DirectionEnv(**env_config)
+    env = MeentEnv(**env_config)
     env = TimeLimit(env, max_episode_steps=128)
     env = RecordEpisodeStatistics(env)
 
@@ -102,17 +105,19 @@ ModelCatalog.register_custom_model("model", ShallowUQnet)
 
 wandb.init(project='PIRL', config=config)
 trainer = ApexDQN(config=config)
+
 pretrained_dir='/mnt/8tb/Sep16_ShallowUNet_v2_256_2man_1100_70_0.00347449_0.00411770_stateDict.pt'
 policy_ids = trainer.get_weights().keys()
 pretrained = load_pretrained(pretrained_dir)
 trainer.set_weights({
     i: deepcopy(pretrained) for i in policy_ids
 })
+
 # we can save trainer here and load
 
 
 def train_fn(config=None):
-    for i in tqdm(range(500)):
+    for i in tqdm(range(50000)):
         metric = trainer.train()
 
         def _f(e):

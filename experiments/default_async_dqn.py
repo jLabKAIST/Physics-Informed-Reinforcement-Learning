@@ -185,7 +185,7 @@ def main(
         reuse_actors=True,
         restore='/mnt/8tb/anthony/ckpt/dqn/checkpoint_000000',
         local_dir='/mnt/8tb/anthony/ray-result',
-        verbose=0,
+        # verbose=0,
     )
 
 from ray.tune.logger import TBXLoggerCallback
