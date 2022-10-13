@@ -57,30 +57,6 @@ class ReticoloEnv(MatlabEnv):
         )
         self.action_space = gym.spaces.Discrete(n_cells)
 
-        self.max_eff = -1
-        self.best_struct = None
-
-    def reset(self):  # initializing the env
-        self.struct = ga_init()
-        self.eff = self.get_efficiency(self.struct)
-
-        return self.struct[np.newaxis, :]  # for 1 channel
-
-    def step(self, action):
-        prev_eff = self.eff
-
-        self.struct = self.flip(self.struct, action)
-        self.eff = self.get_efficiency(self.struct)
-
-        reward = self.eff - prev_eff
-
-        if self.eff > self.max_eff:
-            self.max_eff = self.eff
-            self.best_struct = self.struct
-
-        # unsqueeze for 1 channel
-        return self.struct[np.newaxis, :], reward, False, {}
-
 
 class DirectionEnv(MatlabEnv):
     def __init__(

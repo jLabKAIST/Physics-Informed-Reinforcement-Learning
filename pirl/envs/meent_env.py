@@ -27,17 +27,21 @@ class MeentEnv(DeflectorEnv):
 
     def get_efficiency(self, struct):
         # struct [1, -1, 1, 1, ...]
+        struct = struct[np.newaxis, np.newaxis, :]
+
+        wls = np.array([1100])
+        period = abs(wls / np.sin(self.desired_angle / 180 * np.pi))
         calc = JLABCode(
-            grating_type=self.grating_type,
-            n_I=self.n_glass, n_II=self.n_air, theta=self.theta, phi=self.phi,
-            fourier_order=self.fourier_order, period=self.period,
-            wls=self.wls, pol=self.pol,
-            patterns=self.pattern, ucell=self.ucell, thickness=self.thickness
+            grating_type=0,
+            n_I=1.45, n_II=1., theta=0, phi=0.,
+            fourier_order=40, period=period,
+            wls=wls, pol=1,
+            patterns=None, ucell=struct, thickness=np.array([325])
         )
 
-        eff, _, _ = calc.reproduce_acs_cell(self.n_si, self.n_air)
-        return eff
+        eff, _, _ = calc.reproduce_acs_cell('p_si__real', 1)
 
+        return eff
 
 
 class DirectionEnv(MeentEnv):

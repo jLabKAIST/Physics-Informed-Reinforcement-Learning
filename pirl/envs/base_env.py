@@ -1,6 +1,8 @@
 import numpy as np
 import gym
 
+from pirl.envs.utils import ga_init
+
 
 class DeflectorEnv(gym.Env):
     def __init__(
@@ -14,6 +16,12 @@ class DeflectorEnv(gym.Env):
         self.desired_angle = desired_angle
         self.eff = None # uninitialized
 
+        self.max_eff = -1
+        self.best_struct = None
+
+    def get_efficiency(self, struct: np.array) -> float:
+        raise NotImplementedError
+
 
     def flip(self, struct, pos):
         if 0 <= pos <= (self.n_cells - 1):
@@ -25,5 +33,27 @@ class DeflectorEnv(gym.Env):
 
         return struct
 
-    def get_efficiency(self, struct: np.array) -> float:
-        raise NotImplementedError
+    """
+    usually, below logics will suffice
+    """
+
+    def reset(self):  # initializing the env
+        self.struct = ga_init()
+        self.eff = self.get_efficiency(self.struct)
+
+        return self.struct[np.newaxis, :]  # for 1 channel
+
+    def step(self, action):
+        prev_eff = self.eff
+
+        self.struct = self.flip(self.struct, action)
+        self.eff = self.get_efficiency(self.struct)
+
+        reward = self.eff - prev_eff
+
+        if self.eff > self.max_eff:
+            self.max_eff = self.eff
+            self.best_struct = self.struct
+
+        # unsqueeze for 1 channel
+        return self.struct[np.newaxis, :], reward, False, {}

@@ -19,6 +19,7 @@ from copy import deepcopy
 from experiments.utils import load_pretrained
 from pirl._networks import ShallowUQnet
 from pirl.envs.reticolo_env import ReticoloEnv
+from pirl.envs.meent_env import MeentEnv
 from ray.rllib.algorithms.dqn import DQN
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
 
@@ -98,7 +99,8 @@ config.framework(
 
 
 def make_env(**env_config):
-    env = ReticoloEnv(**env_config)
+    # env = ReticoloEnv(**env_config)
+    env = MeentEnv(**env_config)
     env = TimeLimit(env, max_episode_steps=128)
     env = RecordEpisodeStatistics(env)
     env = NormalizeReward(env)
