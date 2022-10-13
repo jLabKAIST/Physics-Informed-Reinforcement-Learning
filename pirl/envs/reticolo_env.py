@@ -1,12 +1,11 @@
 import gym
 import numpy as np
-from gym.core import ObsType, ActType
 
 import os
-from enum import Enum
 from pathlib import Path
-from pirl.envs.utils import ga_init
-from typing import Optional, Union, Tuple
+
+from pirl.envs.base_env import DeflectorEnv
+from pirl.envs.utils import ga_init, Direction1d
 
 try:
     import matlab.engine
@@ -17,16 +16,14 @@ RETICOLO_MATLAB = os.path.join(Path().absolute().parent, 'third_party/reticolo_a
 SOLVER_MATLAB = os.path.join(Path().absolute().parent, 'third_party/solvers')
 
 
-class MatlabEnv(gym.Env):
+class MatlabEnv(DeflectorEnv):
     def __init__(
             self,
             n_cells=256,
             wavelength=1100,
             desired_angle=70
     ):
-        self.n_cells = n_cells
-        self.wavelength = wavelength
-        self.desired_angle = desired_angle
+        super().__init__(n_cells, wavelength, desired_angle)
 
         self.eng = matlab.engine.start_matlab()
         self.eng.addpath(self.eng.genpath(RETICOLO_MATLAB))
@@ -34,17 +31,7 @@ class MatlabEnv(gym.Env):
         self.wavelength_mtl = matlab.double([wavelength])
         self.desired_angle_mtl = matlab.double([desired_angle])
 
-    def flip(self, struct, pos):
-        if 0 <= pos <= (self.n_cells - 1):
-            struct[pos] = 1 if struct[pos] == -1 else -1
-        else:
-            # if out of boundary, do nothing
-            # the agent will learn the boundary
-            pass
-
-        return struct
-
-    def eval_eff_1d(self, struct: np.array):
+    def get_efficiency(self, struct: np.array):
         return self.eng.Eval_Eff_1D(
             matlab.double(struct),
             self.wavelength_mtl,
@@ -75,7 +62,7 @@ class ReticoloEnv(MatlabEnv):
 
     def reset(self):  # initializing the env
         self.struct = ga_init()
-        self.eff = self.eval_eff_1d(self.struct)
+        self.eff = self.get_efficiency(self.struct)
 
         return self.struct[np.newaxis, :]  # for 1 channel
 
@@ -83,7 +70,7 @@ class ReticoloEnv(MatlabEnv):
         prev_eff = self.eff
 
         self.struct = self.flip(self.struct, action)
-        self.eff = self.eval_eff_1d(self.struct)
+        self.eff = self.get_efficiency(self.struct)
 
         reward = self.eff - prev_eff
 
@@ -95,20 +82,13 @@ class ReticoloEnv(MatlabEnv):
         return self.struct[np.newaxis, :], reward, False, {}
 
 
-class Direction1d(Enum):
-    # Directional Action
-    LEFT = 0
-    NOOP = 1
-    RIGHT = 2
-
-
 class DirectionEnv(MatlabEnv):
     def __init__(
             self,
-            initial_pos='random',
             n_cells=256,
             wavelength=1100,
             desired_angle=70,
+            initial_pos='random', # initial agent's position
             *args,
             **kwargs
     ):
@@ -123,9 +103,11 @@ class DirectionEnv(MatlabEnv):
         self.initial_pos = initial_pos
 
     def reset(self):
+        # initialize structure
         self.struct = ga_init(self.n_cells)
-        self.eval_eff_1d(self.struct)
+        self.eff = self.get_efficiency(self.struct)
 
+        # initialize agent
         if self.initial_pos == 'center':
             self.pos = self.n_cells // 2
         elif self.initial_pos == 'right_edge':
@@ -145,7 +127,7 @@ class DirectionEnv(MatlabEnv):
         # this way we can directly use ac as index difference
         ac -= 1
         self.struct = self.flip(self.struct, self.pos + ac)
-        self.eff = self.eval_eff_1d(self.struct)
+        self.eff = self.get_efficiency(self.struct)
 
         reward = self.eff - prev_eff
 

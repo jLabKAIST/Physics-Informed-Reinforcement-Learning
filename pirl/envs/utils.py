@@ -1,4 +1,5 @@
 import time
+from enum import Enum
 
 import gym
 import numpy as np
@@ -39,3 +40,10 @@ def ga_init(n_cells=256, mfs=30, mu=0) -> np.array:
         i = temp + 1
 
     return np.array(img)
+
+
+class Direction1d(Enum):
+    # Directional Action
+    LEFT = 0
+    NOOP = 1
+    RIGHT = 2

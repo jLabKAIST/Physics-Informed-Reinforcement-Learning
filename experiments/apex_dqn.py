@@ -16,7 +16,6 @@ from experiments.utils import load_pretrained
 from pirl._networks import ShallowUQnet
 from pirl.envs.reticolo_env import ReticoloEnv
 
-wandb.init(project='PIRL')
 NUM_GPUS = 1
 ENV_ID = "deflector-v0"
 BATCH_SIZE = 512
@@ -101,6 +100,7 @@ def make_env(**env_config):
 register_env(ENV_ID, lambda c: make_env(**config.env_config))
 ModelCatalog.register_custom_model("model", ShallowUQnet)
 
+wandb.init(project='PIRL', config=config)
 trainer = ApexDQN(config=config)
 pretrained_dir='/mnt/8tb/Sep16_ShallowUNet_v2_256_2man_1100_70_0.00347449_0.00411770_stateDict.pt'
 policy_ids = trainer.get_weights().keys()
@@ -108,6 +108,7 @@ pretrained = load_pretrained(pretrained_dir)
 trainer.set_weights({
     i: deepcopy(pretrained) for i in policy_ids
 })
+# we can save trainer here and load
 
 
 def train_fn(config=None):
