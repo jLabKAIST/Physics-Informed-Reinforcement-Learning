@@ -17,8 +17,6 @@ from experiments.utils import load_pretrained
 from pirl._networks import ShallowUQnet
 from pirl.envs.reticolo_env import ReticoloEnv
 from pirl.envs.meent_env import MeentEnv
-import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '2,3'
 
 NUM_GPUS = 1
 ENV_ID = "deflector-v0"
@@ -99,14 +97,14 @@ from pirl.envs.meent_env import DirectionEnv
 def make_env(**env_config):
     env = DirectionEnv(**env_config)
     # env = MeentEnv(**env_config)
-    env = TimeLimit(env, max_episode_steps=128)
+    env = TimeLimit(env, max_episode_steps=1024)
     env = RecordEpisodeStatistics(env)
 
     return env
 
 
-register_env(ENV_ID, lambda c: make_env(**config.env_config))
-ModelCatalog.register_custom_model("model", ShallowUQnet)
+#register_env(ENV_ID, lambda c: make_env(**config.env_config))
+#ModelCatalog.register_custom_model("model", ShallowUQnet)
 
 # wandb.init(project='PIRL', config=config)
 # trainer = ApexDQN(config=config)
@@ -130,7 +128,7 @@ def main(
     tune.run(
         ApexDQN,
         config=config.to_dict(),
-        reuse_actors=True,
+#        reuse_actors=True,
         # restore='/home/anthony/apex-dqn/checkpoint_000000',
         local_dir='/home/anthony/ray-result',
         # verbose=0,
