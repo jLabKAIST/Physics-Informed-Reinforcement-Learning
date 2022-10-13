@@ -12,10 +12,13 @@ from ray import tune, air
 from ray.tune import register_env
 from tqdm import tqdm
 
+from experiments.utils import Callbacks
 from experiments.utils import load_pretrained
 from pirl._networks import ShallowUQnet
 from pirl.envs.reticolo_env import ReticoloEnv
 from pirl.envs.meent_env import MeentEnv
+import os
+os.environ['CUDA_VISIBLE_DEVICES'] = '2,3'
 
 NUM_GPUS = 1
 ENV_ID = "deflector-v0"
@@ -33,17 +36,20 @@ config.framework(
         'wavelength': 1100,
         'desired_angle': 70
     },
-    normalize_actions=False,
-).training(
-    model={
-        'custom_model': 'model'
-    },
-    dueling=False,
-    # target_network_update_freq=2000,
-).rollouts(
-    num_rollout_workers=32,
-    num_envs_per_worker=6,
+    # normalize_actions=False,
+).callbacks(
+    Callbacks
 )
+    # .training(
+    # model={
+    #     'custom_model': 'model'
+    # },
+    # dueling=,
+    # target_network_update_freq=2000,
+# ).rollouts(
+    # num_rollout_workers=1,
+    # num_envs_per_worker=1,
+# )
 #     replay_buffer_config={
 #         "_enable_replay_buffer_api": True,
 #         "type": "MultiAgentReplayBuffer",
@@ -91,9 +97,8 @@ config.framework(
 
 from pirl.envs.meent_env import DirectionEnv
 def make_env(**env_config):
-
-    #env = DirectionEnv(**env_config)
-    env = MeentEnv(**env_config)
+    env = DirectionEnv(**env_config)
+    # env = MeentEnv(**env_config)
     env = TimeLimit(env, max_episode_steps=128)
     env = RecordEpisodeStatistics(env)
 
@@ -103,40 +108,62 @@ def make_env(**env_config):
 register_env(ENV_ID, lambda c: make_env(**config.env_config))
 ModelCatalog.register_custom_model("model", ShallowUQnet)
 
-wandb.init(project='PIRL', config=config)
-trainer = ApexDQN(config=config)
+# wandb.init(project='PIRL', config=config)
+# trainer = ApexDQN(config=config)
 
-pretrained_dir='/mnt/8tb/Sep16_ShallowUNet_v2_256_2man_1100_70_0.00347449_0.00411770_stateDict.pt'
-policy_ids = trainer.get_weights().keys()
-pretrained = load_pretrained(pretrained_dir)
-trainer.set_weights({
-    i: deepcopy(pretrained) for i in policy_ids
-})
+# pretrained_dir='/home/anthony/Sep16_ShallowUNet_v2_256_2man_1100_70_0.00347449_0.00411770_stateDict.pt'
+# policy_ids = trainer.get_weights().keys()
+# pretrained = load_pretrained(pretrained_dir)
+# trainer.set_weights({
+#     i: deepcopy(pretrained) for i in policy_ids
+# })
+# trainer.save('/home/anthony/apex-dqn')
+
+
+def main(
+        pretrained_dir='/mnt/8tb/anthony/ckpt/apex-dqn/'
+):
+    # TODO: how to pass polyak tau
+    register_env(ENV_ID, lambda c: make_env(**config.env_config))
+    # ModelCatalog.register_custom_model("model", ShallowUQnet)
+    # ModelCatalog.register_custom_model("model", UNet)
+    tune.run(
+        ApexDQN,
+        config=config.to_dict(),
+        reuse_actors=True,
+        # restore='/home/anthony/apex-dqn/checkpoint_000000',
+        local_dir='/home/anthony/ray-result',
+        # verbose=0,
+    )
+
+if __name__ == "__main__":
+    main()
+
 
 # we can save trainer here and load
 
 
-def train_fn(config=None):
-    for i in tqdm(range(50000)):
-        metric = trainer.train()
-
-        def _f(e):
-            return e.max_eff, e.best_struct, e.episode_returns.mean()
-
-        r = trainer.workers.foreach_env(_f)
-        r = [i for i in r if len(i) > 0]
-        r = list(chain(*r))
-
-        mean_eff = np.array([i[2] for i in r]).mean()
-        if len(r) > 0:
-            r.sort(key=lambda t: t[0], reverse=True)
-            eff, st, _ = r[0]
-            st = np.array([0 if i == -1 else 1 for i in st], dtype=int)[np.newaxis, :]
-            img = wandb.Image(st, caption=f"efficiency {eff:.6f}")
-            wandb.log({
-                'max_eff': eff,
-                'mean_eff': mean_eff,
-                "best_structure": img,
-            }, step=i * BATCH_SIZE)
-
-train_fn()
+# def train_fn(config=None):
+#     for i in tqdm(range(50000)):
+#         metric = trainer.train()
+#
+#         def _f(e):
+#             return e.max_eff, e.best_struct, e.episode_returns.mean()
+#
+#         r = trainer.workers.foreach_env(_f)
+#         r = [i for i in r if len(i) > 0]
+#         r = list(chain(*r))
+#
+#         mean_eff = np.array([i[2] for i in r]).mean()
+#         if len(r) > 0:
+#             r.sort(key=lambda t: t[0], reverse=True)
+#             eff, st, _ = r[0]
+#             st = np.array([0 if i == -1 else 1 for i in st], dtype=int)[np.newaxis, :]
+#             img = wandb.Image(st, caption=f"efficiency {eff:.6f}")
+#             wandb.log({
+#                 'max_eff': eff,
+#                 'mean_eff': mean_eff,
+#                 "best_structure": img,
+#             }, step=i * BATCH_SIZE)
+#
+# train_fn()

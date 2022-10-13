@@ -1,19 +1,12 @@
-from typing import Dict, Union
-
 from gym.wrappers import TimeLimit, RecordEpisodeStatistics
-from ray.rllib import BaseEnv, Policy
-from ray.rllib.algorithms.callbacks import DefaultCallbacks
 from ray.rllib.algorithms.dqn import DQN
 from ray.rllib.algorithms.dqn import DQNConfig
-from ray.rllib.evaluation import Episode
-from ray.rllib.evaluation.episode_v2 import EpisodeV2
 from ray.rllib.models.catalog import ModelCatalog
-from ray.rllib.utils.typing import PolicyID
 
 from ray import tune
 from ray.tune import register_env
 
-import wandb
+from experiments.utils import Callbacks
 from pirl._networks import ShallowUQnet
 from pirl.envs.reticolo_env import ReticoloEnv
 
@@ -24,17 +17,6 @@ NUM_ROLLOUT_WORKERS = 16
 
 
 # wandb.init(project='PIRL')
-class Callbacks(DefaultCallbacks):
-    def on_episode_end(
-        self,
-        *,
-        worker: "RolloutWorker",
-        base_env: BaseEnv,
-        policies: Dict[PolicyID, Policy],
-        episode: Union[Episode, EpisodeV2, Exception],
-        **kwargs,
-    ) -> None:
-        episode.custom_metrics['eff'] = [e.max_eff for e in base_env.get_sub_environments()]
 
 
 config = DQNConfig()
@@ -110,6 +92,11 @@ def main(
         verbose=0,
     )
 
+
+if __name__ == "__main__":
+    main()
+
+
     # stop = {
     #     # "training_iteration": stop_iters,
     #     "timesteps_total": 10000000  # 134217728,  # 8192
@@ -159,7 +146,3 @@ def main(
     #         checkpoint_config=air.CheckpointConfig(checkpoint_at_end=True),
     #     )
     # ).fit()
-
-
-if __name__ == "__main__":
-    main()
