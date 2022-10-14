@@ -1,0 +1,48 @@
+Failure # 1 (occurred at 2022-10-05_00-21-34)
+[36mray::ApexDQN.train()[39m (pid=668712, ip=143.248.153.115, repr=ApexDQN)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/tune/trainable/trainable.py", line 347, in train
+    result = self.step()
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/algorithms/algorithm.py", line 661, in step
+    results, train_iter_ctx = self._run_one_training_iteration()
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/algorithms/algorithm.py", line 2378, in _run_one_training_iteration
+    num_recreated += self.try_recover_from_step_attempt(
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/algorithms/algorithm.py", line 2185, in try_recover_from_step_attempt
+    raise error
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/algorithms/algorithm.py", line 2373, in _run_one_training_iteration
+    results = self.training_step()
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/algorithms/apex_dqn/apex_dqn.py", line 431, in training_step
+    num_samples_ready_dict = self.get_samples_and_store_to_replay_buffers()
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/algorithms/apex_dqn/apex_dqn.py", line 495, in get_samples_and_store_to_replay_buffers
+    num_samples_ready_dict = self._sampling_actor_manager.get_ready()
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/execution/parallel_requests.py", line 173, in get_ready
+    objs = ray.get(ready_requests)
+ray.exceptions.RayTaskError(InterruptedError): [36mray::RolloutWorker.apply()[39m (pid=668809, ip=143.248.153.115, repr=<ray.rllib.evaluation.rollout_worker.RolloutWorker object at 0x7f41ad0cc430>)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/evaluation/rollout_worker.py", line 1664, in apply
+    return func(self, *args, **kwargs)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/algorithms/apex_dqn/apex_dqn.py", line 480, in remote_worker_sample_and_store
+    _batch = worker.sample()
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/evaluation/rollout_worker.py", line 806, in sample
+    batches = [self.input_reader.next()]
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/evaluation/sampler.py", line 92, in next
+    batches = [self.get_data()]
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/evaluation/sampler.py", line 282, in get_data
+    item = next(self._env_runner)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/evaluation/sampler.py", line 734, in _env_runner
+    base_env.send_actions(actions_to_send)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/env/vector_env.py", line 396, in send_actions
+    ) = self.vector_env.vector_step(action_vector)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/env/vector_env.py", line 309, in vector_step
+    raise e
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/env/vector_env.py", line 302, in vector_step
+    obs, r, done, info = self.envs[i].step(actions[i])
+  File "/home/anthony/physics-informed-metasurface/pirl/env.py", line 169, in step
+    self.eff = self.eval_eff_1d(
+  File "/home/anthony/physics-informed-metasurface/pirl/env.py", line 150, in eval_eff_1d
+    effs = self.eng.Eval_Eff_1D(struct, wavelength, desired_angle)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/matlab/engine/matlabengine.py", line 70, in __call__
+    return FutureResult(self._engine(), future, nargs, _stdout,
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/matlab/engine/futureresult.py", line 67, in result
+    return self.__future.result(timeout)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/matlab/engine/fevalfuture.py", line 82, in result
+    self._result = pythonengine.getFEvalResult(self._future,self._nargout, None, out=self._out, err=self._err)
+matlab.engine.InterruptedError: The execution of the MATLAB command was interrupted.

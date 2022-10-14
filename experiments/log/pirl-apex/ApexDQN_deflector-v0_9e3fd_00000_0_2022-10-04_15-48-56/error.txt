@@ -1,0 +1,63 @@
+Failure # 1 (occurred at 2022-10-04_15-49-14)
+Traceback (most recent call last):
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/tune/execution/ray_trial_executor.py", line 989, in get_next_executor_event
+    future_result = ray.get(ready_future)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/_private/client_mode_hook.py", line 105, in wrapper
+    return func(*args, **kwargs)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/_private/worker.py", line 2277, in get
+    raise value
+ray.exceptions.RayActorError: The actor died because of an error raised in its creation task, [36mray::ApexDQN.__init__()[39m (pid=111857, ip=143.248.153.115, repr=ApexDQN)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/evaluation/worker_set.py", line 125, in __init__
+    self.add_workers(
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/evaluation/worker_set.py", line 269, in add_workers
+    self.foreach_worker(lambda w: w.assert_healthy())
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/evaluation/worker_set.py", line 391, in foreach_worker
+    remote_results = ray.get([w.apply.remote(func) for w in self.remote_workers()])
+ray.exceptions.RayActorError: The actor died because of an error raised in its creation task, [36mray::RolloutWorker.__init__()[39m (pid=111897, ip=143.248.153.115, repr=<ray.rllib.evaluation.rollout_worker.RolloutWorker object at 0x7fb17dcb0100>)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/evaluation/rollout_worker.py", line 613, in __init__
+    self._build_policy_map(
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/evaluation/rollout_worker.py", line 1784, in _build_policy_map
+    self.policy_map.create_policy(
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/policy/policy_map.py", line 123, in create_policy
+    self[policy_id] = create_policy_for_framework(
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/utils/policy.py", line 80, in create_policy_for_framework
+    return policy_class(observation_space, action_space, merged_config)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/policy/policy_template.py", line 330, in __init__
+    self._initialize_loss_from_dummy_batch(
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/policy/policy.py", line 1050, in _initialize_loss_from_dummy_batch
+    actions, state_outs, extra_outs = self.compute_actions_from_input_dict(
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/policy/torch_policy.py", line 319, in compute_actions_from_input_dict
+    return self._compute_action_helper(
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/utils/threading.py", line 24, in wrapper
+    return func(self, *a, **k)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/policy/torch_policy.py", line 952, in _compute_action_helper
+    dist_inputs, dist_class, state_out = self.action_distribution_fn(
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/algorithms/dqn/dqn_torch_policy.py", line 234, in get_distribution_inputs_and_class
+    q_vals = compute_q_values(
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/algorithms/dqn/dqn_torch_policy.py", line 413, in compute_q_values
+    model_out, state = model(input_dict, state_batches or [], seq_lens)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/models/modelv2.py", line 259, in __call__
+    res = self.forward(restored, state or [], seq_lens)
+  File "/home/anthony/physics-informed-metasurface/pirl/networks.py", line 162, in forward
+    res1_1 = self.conv1_1(img)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1130, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/torch/nn/modules/conv.py", line 307, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/torch/nn/modules/conv.py", line 300, in _conv_forward
+    return F.conv1d(F.pad(input, self._reversed_padding_repeated_twice, mode=self.padding_mode),
+RuntimeError: Invalid padding size, expected 0 but got 2
+
+During handling of the above exception, another exception occurred:
+
+[36mray::ApexDQN.__init__()[39m (pid=111857, ip=143.248.153.115, repr=ApexDQN)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/algorithms/algorithm.py", line 308, in __init__
+    super().__init__(config=config, logger_creator=logger_creator, **kwargs)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/tune/trainable/trainable.py", line 157, in __init__
+    self.setup(copy.deepcopy(self.config))
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/algorithms/apex_dqn/apex_dqn.py", line 349, in setup
+    super().setup(config)
+  File "/home/anthony/.pyenv/versions/py39/lib/python3.9/site-packages/ray/rllib/algorithms/algorithm.py", line 443, in setup
+    raise e.args[0].args[2]
+RuntimeError: Invalid padding size, expected 0 but got 2
+

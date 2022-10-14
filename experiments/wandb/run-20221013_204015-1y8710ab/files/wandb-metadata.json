@@ -1,0 +1,24 @@
+{
+    "os": "Linux-5.15.0-48-generic-x86_64-with-glibc2.31",
+    "python": "3.9.14",
+    "heartbeatAt": "2022-10-13T11:40:16.296162",
+    "startedAt": "2022-10-13T11:40:15.529850",
+    "docker": null,
+    "gpu": "NVIDIA GeForce RTX 3080",
+    "gpu_count": 4,
+    "cpu_count": 72,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "/home/anthony/physics-informed-metasurface/experiments/apex_dqn.py",
+    "codePath": "experiments/apex_dqn.py",
+    "git": {
+        "remote": "git@github.com:anthony0727/physics-informed-metasurface.git",
+        "commit": "c15d3d05483c9a8ff55a23fd8ab4e7097c0096bc"
+    },
+    "email": "jwseok0727@gmail.com",
+    "root": "/home/anthony/physics-informed-metasurface",
+    "host": "rayleigh-B7105F48TV4HR-2T-G",
+    "username": "anthony",
+    "executable": "/home/anthony/.pyenv/versions/py39/bin/python"
+}
