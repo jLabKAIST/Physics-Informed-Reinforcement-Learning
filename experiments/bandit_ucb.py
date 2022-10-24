@@ -1,28 +1,30 @@
 from pprint import pprint
 
-from tqdm import tqdm
-
-import wandb
-from ray.rllib.algorithms.r2d2 import R2D2Config
+from ray.rllib.algorithms.bandit import BanditLinUCBConfig
 
 import common
+import wandb
+from pirl._networks import ShallowUQnet
 
-# TODO: how to pass polyak tau
-config = R2D2Config()
+config = BanditLinUCBConfig()
 config.framework(
     framework='torch'
 ).environment(
     env=common.ENV_ID,
-    env_config=common.ENV_CONFIG
-).training(
-    model=dict(use_lstm=True)
+    env_config=common.ENV_CONFIG,
 ).callbacks(
     common.Callbacks
 )
-common.register_all(config=config)
-algo = config.build()
 
-wandb.init(project='PIRL-FINAL', group='test-group')
+# TODO: how to pass polyak tau
+common.register_all(config=config)
+
+algo = config.build()
+# algo.restore(common.DQN_MEENTINDEX_PRETRAIN)
+
+wandb.init(project='PIRL-FINAL', group='test-group', config=config.to_dict())
+# wandb.require('service')
+
 
 step = 0
 while step < 20000000:

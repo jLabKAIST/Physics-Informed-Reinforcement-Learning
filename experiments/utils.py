@@ -1,3 +1,4 @@
+import gym
 import numpy as np
 import torch
 from torch import nn
@@ -27,3 +28,9 @@ def load_pretrained(path):
 #
 #     return pretrained
 
+class RegretWrapper(gym.Wrapper):
+    def step(self, ac):
+        obs, rew, done, info = super(RegretWrapper, self).step(ac)
+        info['regret'] = 100. - rew
+
+        return obs, rew, done, info
