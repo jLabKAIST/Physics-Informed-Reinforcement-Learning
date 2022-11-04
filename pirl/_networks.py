@@ -394,8 +394,8 @@ class ShallowUQnet(TorchModelV2, nn.Module):
         temp = self.conv11_2(res11_1)
         temp = self.conv11_3(temp) + res11_1
         temp = self.conv11_fin(temp)
-        temp = temp.flatten(1)
 
+        temp = temp.flatten(1)
         action_logits = temp
         self._value_logits = temp.argmax()
 

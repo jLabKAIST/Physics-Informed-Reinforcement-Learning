@@ -6,8 +6,19 @@ import common
 import wandb
 from pirl._networks import ShallowUQnet
 
-# MODEL_CLS = ShallowUQnet
+"""
+use this as template for other experiments
+"""
 
+MODEL_CLS = ShallowUQnet
+
+
+"""
+algorithm config 
+
+can conver to dictionary
+```config.to_dict()```
+"""
 config = DQNConfig()
 config.framework(
     framework='torch'
@@ -15,10 +26,10 @@ config.framework(
     env=common.ENV_ID,
     env_config=common.ENV_CONFIG,
 ).training(
-    dueling=True,
-    # model={
-    #     'custom_model': MODEL_CLS.__name__
-    # },
+    # dueling=True,
+    model={
+        'custom_model': MODEL_CLS.__name__
+    },
 ).resources(
     num_gpus=4
 ).rollouts(
@@ -27,7 +38,13 @@ config.framework(
     explore=True
 )
 
+"""
+register configs to rllib
 
+example : 
+* environment(args including order, thickness, angle)
+* my custom model
+"""
 # TODO: how to pass polyak tau
 common.register_all(config=config)
 
@@ -36,7 +53,6 @@ algo = config.build()
 
 wandb.init(project='PIRL-FINAL', group='test-group', config=config.to_dict())
 # wandb.require('service')
-
 
 step = 0
 while step < 20000000:
@@ -48,3 +64,4 @@ while step < 20000000:
     wandb.log(result_dict, step=step)
 
     step = result['agent_timesteps_total']
+

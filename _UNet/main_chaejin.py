@@ -221,9 +221,6 @@ if __name__== '__main__':
     elif args.optimizer == 'RMSprop':
         optimizer = optim.RMSprop(q.parameters(), lr=args.lr)
 
-
-
-
     epi_len_st= []
     n_epi =1    # start from 1st episode   
     count = 0

@@ -3,6 +3,9 @@ these configs and methods are instantly changed, but used across experiments
 """
 import itertools
 from netrc import netrc
+from operator import itemgetter
+
+from torch.utils.tensorboard import SummaryWriter
 
 PROJECT = 'PIRL-FINAL'
 
@@ -31,17 +34,18 @@ APEX_MEENTINDEX_PRETRAIN = f'{DATA_DIR}/ckpt/apex-dqn/checkpoint_000000'
 DQN_MEENTINDEX_PRETRAIN = f'{DATA_DIR}/ckpt/dqn/checkpoint_000000'
 
 # algorithm
-ENV_ID = 'MeentDirectionChoice-v0'
+ENV_ID = 'MeentIndex-v0'
 # ENV_ID = 'MeentIndex-v0'
 ENV_CONFIG = {
     'n_cells': 256,
     'wavelength': 1100,
-    'desired_angle': 70
+    'desired_angle': 70,
+    'order': 40,
 }
 MAX_TIMESTEPS = int(2e+7)
 import gym
 # helper methods
-def make_env(wrapper_clses, **env_config):
+def make_env(wrapper_clses=None, **env_config):
     env = deflector_gym.make(ENV_ID, **env_config)
     for w in wrapper_clses:
         env = w(env)
@@ -66,13 +70,9 @@ class Callbacks(DefaultCallbacks):
         algorithm: "Algorithm",
         **kwargs,
     ) -> None:
-        # wandb.require('service')
-        # for w in algorithm.workers:
-        #     wandb.init(project='PIRL-FINAL', group='test-group', name=w.__name__)
         pass
 
     def on_create_policy(self, *, policy_id: PolicyID, policy: Policy) -> None:
-        # wandb.init(project='PIRL-FINAL', group='test-group')
         pass
 
     def on_episode_step(
@@ -96,30 +96,41 @@ class Callbacks(DefaultCallbacks):
             episode: Union[Episode, EpisodeV2, Exception],
             **kwargs,
     ) -> None:
+        # best (eff, struct)
         bests = [e.best for e in base_env.get_sub_environments()]
-        bests.sort(key=lambda x: x[0])
-        episode.media['best'] = bests[0]
-        # eff = bests[0][0]
-        # img = wandb.Image(bests[0][1][np.newaxis, :], caption=f"efficiency {eff:.6f}")
-        #
-        #
-        # wandb.log({
-        #     f'best efficiency': eff,
-        #     f'best structure': img,
-        # }, step=episode.episode_id)
+
+        best = max(bests, key=itemgetter(0))
+
+        max_eff = best[0]
+        img = best[1][np.newaxis, np.newaxis, :].repeat(32, axis=1)
+        mean_eff = np.array([i[0] for i in bests]).mean()
+
+        episode.custom_metrics['best_efficiency'] = max_eff
+        episode.custom_metrics['mean_efficiency'] = mean_eff
+
+        episode.media['best_structure'] = img
 
 
 def process_result(algo):
     bests = algo.workers.foreach_env(lambda env: env.best)
+
     bests.pop(0)
     bests = list(itertools.chain(*bests))
-    bests.sort(key=lambda x: x[0]) # ascending order
-    max_eff = bests[-1][0]
-    img = wandb.Image(bests[-1][1][np.newaxis, :], caption=f"efficiency {max_eff:.6f}")
+
+    # bests.sort(key=lambda x: x[0]) # ascending order
+    # best = bests[-1]
+    best = max(bests, key=itemgetter(0))
+
+    max_eff = best[0]
+    img = best[1][np.newaxis, np.newaxis, :].repeat(32, axis=1)
     mean_eff = np.array([i[0] for i in bests]).mean()
 
     return {
-        f'best efficiency': max_eff,
-        f'best structure': img,
-        f'mean efficiency': mean_eff,
+        'scalar': {
+            f'best_efficiency': max_eff,
+            f'mean_efficiency': mean_eff,
+        },
+        'img': {
+            f'best_structure': img,
+        }
     }
