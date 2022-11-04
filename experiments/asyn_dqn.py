@@ -39,8 +39,8 @@ config.framework(
     num_gpus=NUM_GPUS
 ).rollouts(
     horizon=128,
-    num_rollout_workers=1,# important!! each accounts for process
-    num_envs_per_worker=1, # each accounts for process
+    num_rollout_workers=0, # important!! each accounts for process
+    # num_envs_per_worker=1, # each accounts for process
     rollout_fragment_length=2,
 ).exploration(
     explore=True,

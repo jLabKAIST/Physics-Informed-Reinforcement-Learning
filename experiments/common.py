@@ -1,41 +1,43 @@
 """
 these configs and methods are instantly changed, but used across experiments
 """
+from typing import Dict, Union, Optional
 import itertools
 from netrc import netrc
 from operator import itemgetter
 
-from torch.utils.tensorboard import SummaryWriter
-
 PROJECT = 'PIRL-FINAL'
 
-from typing import Dict, Union, Optional
+
+import numpy as np
 
 from ray.rllib.models import ModelCatalog
 from ray.tune import register_env
-import numpy as np
-import wandb
-import deflector_gym
 from ray.rllib import BaseEnv, Policy, RolloutWorker
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
 from ray.rllib.evaluation import Episode
 from ray.rllib.evaluation.episode_v2 import EpisodeV2
 from ray.rllib.utils.typing import PolicyID
 
+import deflector_gym
+
 # logging and data path
 DATA_DIR = '/mnt/8tb/anthony'
 LOG_DIR = f'{DATA_DIR}/ray-result'
-# ENV_ID = 'MeentIndex-v0'  # 'MeentDirection-v0'
-WANDB = {
-    'project': PROJECT,
-    'api_key': netrc().authenticators('api.wandb.ai')[-1]
-}
+try:
+    WANDB = {
+        'project': PROJECT,
+        'api_key': netrc().authenticators('api.wandb.ai')[-1]
+    }
+except Exception as e:
+    pass
+
 APEX_MEENTINDEX_PRETRAIN = f'{DATA_DIR}/ckpt/apex-dqn/checkpoint_000000'
 DQN_MEENTINDEX_PRETRAIN = f'{DATA_DIR}/ckpt/dqn/checkpoint_000000'
 
 # algorithm
+# ENV_ID = 'MeentIndex-v0'  # 'MeentDirection-v0'
 ENV_ID = 'MeentIndex-v0'
-# ENV_ID = 'MeentIndex-v0'
 ENV_CONFIG = {
     'n_cells': 256,
     'wavelength': 1100,
@@ -43,7 +45,8 @@ ENV_CONFIG = {
     'order': 40,
 }
 MAX_TIMESTEPS = int(2e+7)
-import gym
+
+
 # helper methods
 def make_env(wrapper_clses=None, **env_config):
     env = deflector_gym.make(ENV_ID, **env_config)
@@ -86,7 +89,6 @@ class Callbacks(DefaultCallbacks):
     ) -> None:
         pass
 
-    # @wandb_mixin
     def on_episode_end(
             self,
             *,
@@ -117,8 +119,6 @@ def process_result(algo):
     bests.pop(0)
     bests = list(itertools.chain(*bests))
 
-    # bests.sort(key=lambda x: x[0]) # ascending order
-    # best = bests[-1]
     best = max(bests, key=itemgetter(0))
 
     max_eff = best[0]
