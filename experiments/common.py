@@ -1,6 +1,7 @@
 """
 these configs and methods are instantly changed, but used across experiments
 """
+from pprint import pprint
 from typing import Dict, Union, Optional
 import itertools
 from netrc import netrc
@@ -12,12 +13,14 @@ PROJECT = 'PIRL-FINAL'
 import numpy as np
 
 from ray.rllib.models import ModelCatalog
+from ray.rllib.algorithms import Algorithm
 from ray.tune import register_env
-from ray.rllib import BaseEnv, Policy, RolloutWorker
+from ray.rllib import BaseEnv, Policy, RolloutWorker, SampleBatch
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
 from ray.rllib.evaluation import Episode
 from ray.rllib.evaluation.episode_v2 import EpisodeV2
 from ray.rllib.utils.typing import PolicyID
+
 
 import deflector_gym
 
@@ -67,13 +70,40 @@ def register_all(config, wrapper_clses=None, model_cls=None):
         ModelCatalog.register_custom_model(model_cls.__name__, model_cls)
 
 class Callbacks(DefaultCallbacks):
+    def on_train_result(
+        self,
+        *,
+        algorithm: Optional["Algorithm"] = None,
+        result: dict,
+        trainer=None,
+        **kwargs,
+    ) -> None:
+        print('on_train_result')
+        pass
+
+    def on_learn_on_batch(
+        self, *, policy: Policy, train_batch: SampleBatch, result: dict, **kwargs
+    ) -> None:
+        print('on_learn_on_batch')
+        # print('on_learn_on_batch', result)
+        print(train_batch)
+        print(result)
+
     def on_algorithm_init(
         self,
         *,
         algorithm: "Algorithm",
         **kwargs,
     ) -> None:
-        pass
+        # dummy_layers = [
+        #     "advantage_module.dueling_A_0._model.0.weight",
+        #     "advantage_module.dueling_A_0._model.0.bias",
+        #     "advantage_module.A._model.0.weight",
+        #     "advantage_module.A._model.0.bias"
+        # ]
+        print('on_algorithm_init')
+        policy = algorithm.get_policy()
+        policy.model.advantage_module.requires_grad_ = False
 
     def on_create_policy(self, *, policy_id: PolicyID, policy: Policy) -> None:
         pass
@@ -87,7 +117,9 @@ class Callbacks(DefaultCallbacks):
         episode: Union[Episode, EpisodeV2],
         **kwargs,
     ) -> None:
-        pass
+        # bests = [e.eff for e in base_env.get_sub_environments()]
+        print('on_episode_step', episode)
+        
 
     def on_episode_end(
             self,
@@ -99,10 +131,16 @@ class Callbacks(DefaultCallbacks):
             **kwargs,
     ) -> None:
         # best (eff, struct)
-        bests = [e.best for e in base_env.get_sub_environments()]
-
+        print('on_episode_end')
+        envs = base_env.get_sub_environments()
+        bests = [e.best for e in envs]
+        # dummy=envs[0]
+        # best = sorted(bests, key=itemgetter(0))[-1]
+        # assert dummy.get_efficiency(best[1]) == best[0]
+        #
         best = max(bests, key=itemgetter(0))
-
+        # assert dummy.get_efficiency(best[1]) == best[0]
+        #
         max_eff = best[0]
         img = best[1][np.newaxis, np.newaxis, :].repeat(32, axis=1)
         mean_eff = np.array([i[0] for i in bests]).mean()

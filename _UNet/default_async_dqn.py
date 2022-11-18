@@ -28,7 +28,6 @@ ENV_ID = "deflector-v0"
 BATCH_SIZE = 512
 NUM_ROLLOUT_WORKERS = 32
 
-
 # wandb.init(project='PIRL')
 
 from ray.rllib.algorithms.dqn import DQNConfig

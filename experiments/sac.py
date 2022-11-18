@@ -1,51 +1,39 @@
-from pprint import pprint
-
+from deflector_gym.wrappers import BestRecorder
 from ray.rllib.algorithms.sac import SACConfig
 
 import common
-import wandb
 
+"""
+define configs
+"""
 config = SACConfig()
 config.framework(
-    framework='torch',
+    framework='torch'
 ).environment(
     env=common.ENV_ID,
     env_config=common.ENV_CONFIG,
+).resources(
+    num_gpus=4
+).rollouts(
+    horizon=1024,
 ).callbacks(
-    common.Callbacks
-).training(
-    twin_q=True,
-    q_model_config={
-        'fcnet_hiddens': [512, 512, 512]
-    },
-    policy_model_config={
-        'fcnet_hiddens': [512, 512, 512],
-    },
-    n_step=3,
+    common.Callbacks # logging
 )
 
-# TODO: how to pass polyak tau
-common.register_all(config=config)
+common.register_all(
+    config=config,
+    wrapper_clses=[BestRecorder],
+)
 
+"""
+build algorithm
+"""
 algo = config.build()
-# algo.restore(common.DQN_MEENTINDEX_PRETRAIN)
 
-wandb.init(
-    project='PIRL-FINAL',
-    group='test-group',
-    config=config.to_dict(),
-    name=f"{common.ENV_ID}"
-)
-# wandb.require('service')
-
-
+"""
+main logic
+"""
 step = 0
-while step < 20000000:
+while step < common.MAX_TIMESTEPS:
     result = algo.train()
-    pprint(result)
-    # logging
-    result_dict = common.process_result(algo)
-
-    wandb.log(result_dict, step=step)
-
     step = result['agent_timesteps_total']

@@ -338,6 +338,7 @@ class ShallowUQnet(TorchModelV2, nn.Module):
         self.conv11_3 = convrelu(16, 16)
 
         self.conv11_fin = nn.Conv1d(16, 1, 3, padding='same', bias=True, padding_mode='circular')
+        self.lin = nn.LazyLinear(256)
 
     def forward(self, input_dict, state, seq_lens):
         img = input_dict['obs']
@@ -395,14 +396,15 @@ class ShallowUQnet(TorchModelV2, nn.Module):
         temp = self.conv11_3(temp) + res11_1
         temp = self.conv11_fin(temp)
 
-        temp = temp.flatten(1)
-        action_logits = temp
-        self._value_logits = temp.argmax()
+        out = self.lin(temp)
+        # temp = temp.flatten(1)
+        # action_logits = temp
+        # self._value_logits = temp.argmax()
 
-        return action_logits, []
+        return out, []
 
-    def value_function(self):
-        return self._value_logits
+    # def value_function(self):
+    #     return self._value_logits
 
     # def sample_action(self, obs, epsilon):
     #     obs = torch.reshape(obs, (1, self.ncells))

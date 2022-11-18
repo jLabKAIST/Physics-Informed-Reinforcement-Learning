@@ -49,6 +49,6 @@ if __name__ == '__main__':
         # checkpoint_freq=1024,
         checkpoint_at_end=True,
         # max_failures=3,
-        local_dir='log',
+        local_dir='../log',
         stop=stop
     )

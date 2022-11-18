@@ -1,23 +1,10 @@
-from pprint import pprint
-
+from deflector_gym.wrappers import BestRecorder, ExpandObservation
 from ray.rllib.algorithms.dqn import DQNConfig
 
 import common
-import wandb
-from pirl._networks import ShallowUQnet
 
 """
-use this as template for other experiments
-"""
-
-MODEL_CLS = ShallowUQnet
-
-
-"""
-algorithm config 
-
-can conver to dictionary
-```config.to_dict()```
+define configs
 """
 config = DQNConfig()
 config.framework(
@@ -25,43 +12,30 @@ config.framework(
 ).environment(
     env=common.ENV_ID,
     env_config=common.ENV_CONFIG,
-).training(
-    # dueling=True,
-    model={
-        'custom_model': MODEL_CLS.__name__
-    },
 ).resources(
     num_gpus=4
 ).rollouts(
-    num_rollout_workers=32
-).exploration(
-    explore=True
+    horizon=128,
+    num_rollout_workers=32,
+    num_envs_per_worker=8,
+).callbacks(
+    common.Callbacks # logging
+)
+
+common.register_all(
+    config=config,
+    wrapper_clses=[BestRecorder, ExpandObservation],
 )
 
 """
-register configs to rllib
-
-example : 
-* environment(args including order, thickness, angle)
-* my custom model
+build algorithm
 """
-# TODO: how to pass polyak tau
-common.register_all(config=config)
-
 algo = config.build()
-# algo.restore(common.DQN_MEENTINDEX_PRETRAIN)
 
-wandb.init(project='PIRL-FINAL', group='test-group', config=config.to_dict())
-# wandb.require('service')
-
+"""
+main logic
+"""
 step = 0
-while step < 20000000:
+while step < common.MAX_TIMESTEPS:
     result = algo.train()
-    pprint(result)
-    # logging
-    result_dict = common.process_result(algo)
-
-    wandb.log(result_dict, step=step)
-
     step = result['agent_timesteps_total']
-
