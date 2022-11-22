@@ -33,6 +33,12 @@ class Callbacks(DefaultCallbacks):
         best = max(bests, key=itemgetter(0))
         return best[0], best[1]
 
+    def _tb_image(self, structure):
+        # transform sttructure to tensorboard addable image
+        img = structure[np.newaxis, np.newaxis, :].repeat(32, axis=1)
+
+        return img
+
     def on_learn_on_batch(self, *, policy, train_batch: SampleBatch, result: dict, **kwargs) -> None:
         pass
         
@@ -41,9 +47,6 @@ class Callbacks(DefaultCallbacks):
 
     def on_episode_start(self, *, worker, base_env, policies, episode, env_index=None, **kwargs) -> None:
         eff, struct = self._get_max(base_env)
-        
-        # print(f'initialized {best}')
-        
         episode.custom_metrics['initial_efficiency'] = eff
 
     def on_episode_end(
@@ -56,14 +59,9 @@ class Callbacks(DefaultCallbacks):
             **kwargs,
     ) -> None:
         eff, struct = self._get_max(base_env)
-        # img = best[1][np.newaxis, np.newaxis, :].repeat(32, axis=1)
-        # mean_eff = np.array([i[0] for i in bests]).mean()
-
+        
         episode.custom_metrics['max_efficiency'] = eff
-        # episode.custom_metrics['mean_efficiency'] = mean_eff
-
-        # episode.media['best_structure'] = img
-
+        
 
 if __name__ == '__main__':
     stop = {
