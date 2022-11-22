@@ -1,21 +1,31 @@
-from ray import tune, air
-from deflector_gym.wrappers import ExpandObservation, BestRecorder
-from ray.tune import register_env
-from ray.rllib.models import ModelCatalog
-from ray.rllib.algorithms.dqn import DQNConfig
-from ray.rllib.algorithms.apex_dqn import ApexDQNConfig
-from ray.rllib.algorithms.simple_q import SimpleQConfig
-from ray.rllib.algorithms.dqn.dqn_torch_policy import DQNTorchModel
-from ray.rllib.algorithms.simple_q.simple_q_torch_policy import SimpleQTorchPolicy
-from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
-from torch import nn
-import torch
+import random
+from operator import itemgetter
+
+import deflector_gym
 import gym
 import numpy as np
-from ray.rllib.algorithms.callbacks import DefaultCallbacks
-import deflector_gym
+import torch
+from deflector_gym.wrappers import BestRecorder, ExpandObservation
 from gym.wrappers import NormalizeReward
-from operator import itemgetter
+from ray import air, tune
+from ray.rllib.algorithms.apex_dqn import ApexDQNConfig
+from ray.rllib.algorithms.callbacks import DefaultCallbacks
+from ray.rllib.algorithms.dqn import DQNConfig
+from ray.rllib.algorithms.dqn.dqn_torch_policy import DQNTorchModel
+from ray.rllib.algorithms.simple_q import SimpleQConfig
+from ray.rllib.algorithms.simple_q.simple_q_torch_policy import \
+    SimpleQTorchPolicy
+from ray.rllib.policy.sample_batch import SampleBatch
+from ray.rllib.models import ModelCatalog
+from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
+from ray.tune import register_env
+from torch import nn
+
+# seeding needs to be taken care when multiple workers are used
+random.seed(42)
+np.random.seed(42)
+torch.manual_seed(42)
+torch.cuda.manual_seed(42) 
 
 def init_params(net, val=np.sqrt(2)):
     for module in net.modules():
@@ -113,7 +123,6 @@ class ShallowUQnet(TorchModelV2, nn.Module):
         self.conv11_3 = convrelu(16, 16)
 
         self.conv11_fin = nn.Conv1d(16, 1, 3, padding='same', bias=True, padding_mode='circular')
-        # self.lin = nn.LazyLinear(256)
 
     def forward(self, input_dict, state, seq_lens):
         img = input_dict['obs']
@@ -170,13 +179,8 @@ class ShallowUQnet(TorchModelV2, nn.Module):
         temp = self.conv11_2(res11_1)
         temp = self.conv11_3(temp) + res11_1
         temp = self.conv11_fin(temp)
-
-        # out = self.lin(temp)
         
         temp = temp.flatten(1)
-        
-        # self._value_logits = temp.argmax()
-        # print(self._value_logits.shape)
 
         return temp, []
 
@@ -193,24 +197,29 @@ class OneHot(gym.ObservationWrapper):
         obs[obs == -1] = 0
 
         return obs
-    # def __init__(self, env) -> None:
-    #     super().__init__(env)
-    #     self.observation_space = gym.spaces.MultiDiscrete(
-    #         low=-1., high=1.,
-    #         shape=(n_cells,), #### TODO fix shape
-    #         dtype=np.float64
-    #     )
-
+    
 
 class Callbacks(DefaultCallbacks):
-    def on_episode_start(self, *, worker, base_env, policies, episode, env_index=None, **kwargs) -> None:
-        envs = base_env.get_sub_environments()
-        bests = [e.best for e in envs]
+    def on_algorithm_init(self, *, algorithm, **kwargs) -> None:
+        print(algorithm.get_policy().model)
+
+    def _get_max(self, base_env):
+        bests = [e.best for e in base_env.get_sub_environments()]
         best = max(bests, key=itemgetter(0))
-        max_eff = best[0]
-        print(f'initialized {best}')
+        return best[0], best[1]
+
+    def on_learn_on_batch(self, *, policy, train_batch: SampleBatch, result: dict, **kwargs) -> None:
+        pass
         
-        episode.custom_metrics['initial_efficiency'] = max_eff
+    def on_train_result(self, *, algorithm, result, **kwargs) -> None:
+        pass
+
+    def on_episode_start(self, *, worker, base_env, policies, episode, env_index=None, **kwargs) -> None:
+        eff, struct = self._get_max(base_env)
+        
+        # print(f'initialized {best}')
+        
+        episode.custom_metrics['initial_efficiency'] = eff
 
     def on_episode_end(
             self,
@@ -221,14 +230,11 @@ class Callbacks(DefaultCallbacks):
             episode,
             **kwargs,
     ) -> None:
-        envs = base_env.get_sub_environments()
-        bests = [e.best for e in envs]
-        best = max(bests, key=itemgetter(0))
-        max_eff = best[0]
+        eff, struct = self._get_max(base_env)
         # img = best[1][np.newaxis, np.newaxis, :].repeat(32, axis=1)
         # mean_eff = np.array([i[0] for i in bests]).mean()
 
-        episode.custom_metrics['best_efficiency'] = max_eff
+        episode.custom_metrics['max_efficiency'] = eff
         # episode.custom_metrics['mean_efficiency'] = mean_eff
 
         # episode.media['best_structure'] = img
@@ -242,23 +248,17 @@ env_id = 'MeentIndex-v0'
 def make_env(config):
     e = deflector_gym.make(env_id)
     e = BestRecorder(e)
-    e = NormalizeReward(e)
-    e = OneHot(e)
+    
+    # e = NormalizeReward(e)
+    # e = OneHot(e)
     e = ExpandObservation(e)
     return e
 
 
 register_env(env_id, make_env)
 ModelCatalog.register_custom_model(ShallowUQnet.__name__, ShallowUQnet)
-# config = DQNConfig()
-# config = config.rollouts(horizon=1024)\
-#     .framework(framework='torch')\
-#         .environment(env='MeentIndex-v0')\
-#             .resources(num_gpus=1)\
-#                 .training(model={'custom_model': ShallowUQnet.__name__})\
-#                     .callbacks(Callbacks)
 
-config = ApexDQNConfig()
+config = SimpleQConfig()
 config.framework(
     framework='torch'
 ).environment(
@@ -266,67 +266,58 @@ config.framework(
     normalize_actions=False
 ).callbacks(
     Callbacks # logging
-).rollouts(
-    horizon=1024,
-    # num_rollout_workers=6,
-    # num_envs_per_worker=8,
-    rollout_fragment_length=4,
 ).training(
-    train_batch_size=1024,
-    target_network_update_freq=10000,
     model={
         'custom_model': ShallowUQnet.__name__,
+        'no_final_linear': True,
+        'vf_share_layers': False,
     },
+    target_network_update_freq=2000,
+    replay_buffer_config={
+        "_enable_replay_buffer_api": True,
+        "type": "ReplayBuffer",
+        # "type": "MultiAgentReplayBuffer", # when num_workers > 0
+        "learning_starts": 1000,
+        "capacity": 100000,
+        "replay_sequence_length": 1,
+    },
+    # dueling=False,
+    lr=0.001,
+    gamma=0.99,
+    train_batch_size=512,
+    tau=0.1,
+).resources(
+    num_gpus=1
+).rollouts(
+    horizon=128,
+    num_rollout_workers=0, # important!! each accounts for process
+    num_envs_per_worker=1, # each accounts for process
+    rollout_fragment_length=2,
+).exploration(
+    explore=True,
+    exploration_config={
+        "type": "EpsilonGreedy",
+        'initial_epsilon': 0.99,
+        'final_epsilon': 0.01,
+        'epsilon_timesteps': 100000,
+    }
 )
-# .training(
-#     double_q=False,
-#     model={
-#         'custom_model': ShallowUQnet.__name__,
-#     },
-#     target_network_update_freq=2000,
-#     replay_buffer_config={
-#         "_enable_replay_buffer_api": True,
-#         "type": "ReplayBuffer",
-#         # "type": "MultiAgentReplayBuffer",
-#         "learning_starts": 1000,
-#         "capacity": 100000,
-#         "replay_sequence_length": 1,
-#     },
-#     dueling=False,
-#     lr=0.001,
-#     gamma=0.99,
-#     train_batch_size=512,
-#     # grad_clip=9999, # TODO check
-# ).resources(
-#     num_gpus=1
-# ).rollouts(
-#     horizon=128,
-#     num_rollout_workers=0, # important!! each accounts for process
-#     num_envs_per_worker=1, # each accounts for process
-#     rollout_fragment_length=2,
-# ).exploration(
-#     explore=True,
-#     exploration_config={
-#         'initial_epsilon': 0.99,
-#         'final_epsilon': 0.01,
-#         'epsilon_timesteps': 100000,
-#     }
-# )
-#                 
-# 
 
 tuner = tune.Tuner(
-    'APEX',
+    'SimpleQ',
     param_space=config.to_dict(),
-    # tune_config=tune.TuneConfig(),
+    # tune_config=tune.TuneConfig(), # for hparam search
     run_config=air.RunConfig(
         stop=stop,
-        # callbacks=Callbacks,
         local_dir='/mnt/8tb/anthony/pirl',
-        name='debug-apex',
+        name='debug-simpleq',
         checkpoint_config=air.CheckpointConfig(
             checkpoint_at_end=True,
         ),
     ),
 )
+
+import ray
+
+ray.init(local_mode=False)
 results = tuner.fit()
