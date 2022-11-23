@@ -1,13 +1,13 @@
-import gym
+import random
 import numpy as np
+import gym
+import torch
 
 def seed_all(seed=42):
-    # seeding needs to be taken care when multiple workers are used
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed) 
-
 
 
 class OneHot(gym.ObservationWrapper):
@@ -23,4 +23,3 @@ class OneHot(gym.ObservationWrapper):
         obs[obs == -1] = 0
 
         return obs
-    
