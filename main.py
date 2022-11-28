@@ -17,7 +17,7 @@ import deflector_gym
 from deflector_gym.wrappers import BestRecorder, ExpandObservation
 
 from model import ShallowUQNet
-from utils import seed_all
+from utils import StructureWriter, seed_all
 
 ROOT_DIR = '/mnt/8tb'
 PRETRAINED_MODEL_PATH = os.path.join(
@@ -55,6 +55,7 @@ class Callbacks(DefaultCallbacks):
         # retrieve `env.best`, where env is wrapped with BestWrapper to record the best structure
         bests = [e.best for e in base_env.get_sub_environments()]
         best = max(bests, key=itemgetter(0))
+
         return best[0], best[1]
 
     def _tb_image(self, structure):
@@ -71,6 +72,7 @@ class Callbacks(DefaultCallbacks):
 
     def on_episode_start(self, *, worker, base_env, policies, episode, env_index=None, **kwargs) -> None:
         eff, struct = self._get_max(base_env)
+
         episode.custom_metrics['initial_efficiency'] = eff
 
     def on_episode_end(self, *, worker, base_env, policies, episode, **kwargs,) -> None:
@@ -91,6 +93,7 @@ if __name__ == '__main__':
         e = deflector_gym.make(env_id, **config)
         e = BestRecorder(e)
         e = ExpandObservation(e)
+        e = StructureWriter(e)
 
         return e
 
