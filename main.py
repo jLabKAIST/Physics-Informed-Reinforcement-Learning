@@ -73,7 +73,7 @@ class Callbacks(DefaultCallbacks):
 
         return img
 
-    def on_learn_on_banp_structtch(self, *, policy, train_batch: SampleBatch, result, **kwargs) -> None:
+    def on_learn_on_batch(self, *, policy, train_batch: SampleBatch, result, **kwargs) -> None:
         pass
         
     def on_train_result(self, *, algorithm, result, **kwargs) -> None:
