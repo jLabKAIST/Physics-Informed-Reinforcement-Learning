@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 from operator import itemgetter
 
@@ -20,6 +21,8 @@ from model import ShallowUQNet
 from utils import StructureWriter, seed_all
 
 ROOT_DIR = '/mnt/8tb'
+#LOG_DIR = '/home/chaejin'
+
 PRETRAINED_MODEL_PATH = os.path.join(
     ROOT_DIR,
     'Sep16_ShallowUNet_v2_256_2man_1100_70_0.00347449_0.00411770_stateDict.pt',
@@ -28,8 +31,7 @@ PRETRAINED_MODEL_PATH = os.path.join(
 seeding needs to be taken care when multiple workers are used,
 that is, you need to set seed for each worker
 """
-seed_all(42)
-
+# seed_all(42)
 class Callbacks(DefaultCallbacks):
     """
     logging class for rllib
@@ -42,14 +44,16 @@ class Callbacks(DefaultCallbacks):
     but when distributed training is used, it's inevitable
     """
     def on_create_policy(self, *, policy_id, policy) -> None:
-        state_dict = torch.load(
-            PRETRAINED_MODEL_PATH, 
-            map_location=torch.device('cpu')
-        )
-        policy.set_weights(state_dict)
+        # state_dict = torch.load(
+        #     PRETRAINED_MODEL_PATH, 
+        #     map_location=torch.device('cpu')
+        # )
+        # policy.set_weights(state_dict)
+        pass
 
     def on_algorithm_init(self, *, algorithm, **kwargs) -> None:
         print(algorithm.get_policy().model)
+        seed_all(42)
 
     def _get_max(self, base_env):
         # retrieve `env.best`, where env is wrapped with BestWrapper to record the best structure
@@ -59,7 +63,7 @@ class Callbacks(DefaultCallbacks):
         return best[0], best[1]
 
     def _tb_image(self, structure):
-        # transform sttructure to tensorboard addable image
+        # transform structure to tensorboard addable image
         img = structure[np.newaxis, np.newaxis, :].repeat(32, axis=1)
 
         return img
@@ -75,11 +79,17 @@ class Callbacks(DefaultCallbacks):
 
         episode.custom_metrics['initial_efficiency'] = eff
 
+    def _j(self, a, b):
+        return os.path.join(a, b)
+
     def on_episode_end(self, *, worker, base_env, policies, episode, **kwargs,) -> None:
         eff, struct = self._get_max(base_env)
         
         episode.custom_metrics['max_efficiency'] = eff
-        
+
+        filename = str(worker.worker_index) + f'_{eff*100:.6f}'.replace('.', '-')
+        filename = self._j('/mnt/8tb/test', filename)
+        np.save(filename, struct)
 
 if __name__ == '__main__':
     stop = {
@@ -93,7 +103,8 @@ if __name__ == '__main__':
         e = deflector_gym.make(env_id, **config)
         e = BestRecorder(e)
         e = ExpandObservation(e)
-        e = StructureWriter(e)
+        
+        # e = StructureWriter(e)
 
         return e
 
