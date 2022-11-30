@@ -21,7 +21,12 @@ from model import ShallowUQNet
 from utils import StructureWriter, seed_all
 
 ROOT_DIR = '/mnt/8tb'
-#LOG_DIR = '/home/chaejin'
+
+TIMEFOLDERNAME = datetime.now().strftime('%Y%m%d_%H%M%S')
+
+LOG_DIR = '/mnt/8tb/np_struct'+'/'+TIMEFOLDERNAME
+
+os.makedirs(LOG_DIR, exist_ok=True)
 
 PRETRAINED_MODEL_PATH = os.path.join(
     ROOT_DIR,
@@ -44,16 +49,16 @@ class Callbacks(DefaultCallbacks):
     but when distributed training is used, it's inevitable
     """
     def on_create_policy(self, *, policy_id, policy) -> None:
-        # state_dict = torch.load(
-        #     PRETRAINED_MODEL_PATH, 
-        #     map_location=torch.device('cpu')
-        # )
-        # policy.set_weights(state_dict)
-        pass
+        state_dict = torch.load(
+            PRETRAINED_MODEL_PATH, 
+            map_location=torch.device('cpu')
+        )
+        policy.set_weights(state_dict)
+        # pass
 
     def on_algorithm_init(self, *, algorithm, **kwargs) -> None:
         print(algorithm.get_policy().model)
-        seed_all(42)
+        # seed_all(42)
 
     def _get_max(self, base_env):
         # retrieve `env.best`, where env is wrapped with BestWrapper to record the best structure
@@ -68,7 +73,7 @@ class Callbacks(DefaultCallbacks):
 
         return img
 
-    def on_learn_on_batch(self, *, policy, train_batch: SampleBatch, result, **kwargs) -> None:
+    def on_learn_on_banp_structtch(self, *, policy, train_batch: SampleBatch, result, **kwargs) -> None:
         pass
         
     def on_train_result(self, *, algorithm, result, **kwargs) -> None:
@@ -87,8 +92,8 @@ class Callbacks(DefaultCallbacks):
         
         episode.custom_metrics['max_efficiency'] = eff
 
-        filename = str(worker.worker_index) + f'_{eff*100:.6f}'.replace('.', '-')
-        filename = self._j('/mnt/8tb/test', filename)
+        filename = 'w'+ str(worker.worker_index) + f'_{eff*100:.6f}'.replace('.', '-')
+        filename = self._j(LOG_DIR, filename)
         np.save(filename, struct)
 
 if __name__ == '__main__':
