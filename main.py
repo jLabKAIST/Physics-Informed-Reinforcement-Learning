@@ -1,5 +1,6 @@
 import os
 from operator import itemgetter
+from dotenv import load_dotenv
 
 import numpy as np
 
@@ -13,17 +14,17 @@ from ray.rllib.algorithms.callbacks import DefaultCallbacks
 from ray.rllib.policy.sample_batch import SampleBatch
 from ray.rllib.models import ModelCatalog
 
+from gym.wrappers import TimeLimit
 import deflector_gym
 from deflector_gym.wrappers import BestRecorder, ExpandObservation
 
 from model import ShallowUQNet
 from utils import StructureWriter, seed_all
 
-ROOT_DIR = '/mnt/8tb'
-PRETRAINED_MODEL_PATH = os.path.join(
-    ROOT_DIR,
-    'Sep16_ShallowUNet_v2_256_2man_1100_70_0.00347449_0.00411770_stateDict.pt',
-)
+load_dotenv()
+DATA_DIR = os.environ['DATA_DIR']
+PRETRAINED_MODEL_PATH = os.environ['PRETRAINED_MODEL_PATH']
+
 """
 seeding needs to be taken care when multiple workers are used,
 that is, you need to set seed for each worker
@@ -42,11 +43,12 @@ class Callbacks(DefaultCallbacks):
     but when distributed training is used, it's inevitable
     """
     def on_create_policy(self, *, policy_id, policy) -> None:
-        state_dict = torch.load(
-            PRETRAINED_MODEL_PATH, 
-            map_location=torch.device('cpu')
-        )
-        policy.set_weights(state_dict)
+        # state_dict = torch.load(
+        #     PRETRAINED_MODEL_PATH,
+        #     map_location=torch.device('cpu')
+        # )
+        # policy.set_weights(state_dict)
+        pass
 
     def on_algorithm_init(self, *, algorithm, **kwargs) -> None:
         print(algorithm.get_policy().model)
@@ -90,12 +92,13 @@ if __name__ == '__main__':
     model_cls = ShallowUQNet
 
     def make_env(config):
-        e = deflector_gym.make(env_id, **config)
-        e = BestRecorder(e)
-        e = ExpandObservation(e)
-        e = StructureWriter(e)
+        env = deflector_gym.make(env_id, **config)
+        env = BestRecorder(env)
+        env = ExpandObservation(env)
+        env = StructureWriter(env, DATA_DIR)
+        env = TimeLimit(env, max_episode_steps=128)
 
-        return e
+        return env
 
 
     register_env(env_id, make_env)
@@ -122,7 +125,7 @@ if __name__ == '__main__':
         # tune_config=tune.TuneConfig(), # for hparam search
         run_config=air.RunConfig(
             stop=stop,
-            local_dir=ROOT_DIR,
+            local_dir=DATA_DIR,
             name='pirl',
             checkpoint_config=air.CheckpointConfig(
                 checkpoint_at_end=True,

@@ -65,7 +65,7 @@ multiple_worker.training(
     train_batch_size=512,
     tau=0.1,
 ).resources(
-    num_gpus=4
+    num_gpus=2
 ).rollouts(
     horizon=128,
     num_rollout_workers=16,

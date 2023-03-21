@@ -6,6 +6,13 @@ Coop with JLAB. This repo will be migrated to JLAB's repo later
 ```shell
 pip install -r requirements.txt
 ```
+## DeflectorGym
+
+```shell
+git clone https://github.com/kc-ml2/deflector-gym.git
+cd deflector-gym
+pip install -e .
+```
 
 # Run
 ```shell
