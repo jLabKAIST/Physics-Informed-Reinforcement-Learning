@@ -1,6 +1,15 @@
 # physics-informed-metasurface
 Coop with JLAB. This repo will be migrated to JLAB's repo later
 
+# Environment Variables
+Create `.env` file in the same level directory as `main.py`
+
+and set below
+```shell
+DATA_DIR={/to/data/}
+PRETRAINED_MODEL_PATH={/to/pretrained_model/}
+```
+
 # Requirements
 
 ```shell
