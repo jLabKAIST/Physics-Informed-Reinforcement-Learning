@@ -1,7 +1,7 @@
 # physics-informed-metasurface
 Coop with JLAB. This repo will be migrated to JLAB's repo later
 
-# Environment Variables
+## Environment Variables
 Create `.env` file in the same level directory as `main.py`
 
 and set below
@@ -9,13 +9,18 @@ and set below
 DATA_DIR={/to/data/}
 PRETRAINED_MODEL_PATH={/to/pretrained_model/}
 ```
+e.g.
+```shell
+DATA_DIR=/data_dir
+PRETRAINED_MODEL_PATH=/data_dir/pretrained.pt
+```
 
-# Requirements
+## Requirements
 
 ```shell
 pip install -r requirements.txt
 ```
-## DeflectorGym
+### DeflectorGym
 
 ```shell
 git clone https://github.com/kc-ml2/deflector-gym.git
@@ -23,7 +28,7 @@ cd deflector-gym
 pip install -e .
 ```
 
-# Run
+## Run
 ```shell
 python main.py
 ```
