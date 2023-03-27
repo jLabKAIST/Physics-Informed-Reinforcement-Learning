@@ -1,5 +1,4 @@
 # physics-informed-metasurface
-Coop with JLAB. This repo will be migrated to JLAB's repo later
 
 ## Environment Variables
 Create `.env` file in the same level directory as `main.py`
