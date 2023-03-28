@@ -68,7 +68,7 @@ multiple_worker.training(
     num_gpus=4
 ).rollouts(
     horizon=512,
-    num_rollout_workers=32,
+    num_rollout_workers=16,
     num_envs_per_worker=1,
     rollout_fragment_length=2,
 ).exploration(
