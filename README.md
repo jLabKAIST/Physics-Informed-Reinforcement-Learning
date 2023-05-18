@@ -33,6 +33,3 @@ git clone https://github.com/jLabKAIST/physics-informed-metasurface.git
 cd physics-informed-metasurface
 python main.py
 ```
-
-# License
-TODO : add license
