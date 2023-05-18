@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 from operator import itemgetter
 from dotenv import load_dotenv
@@ -18,7 +19,7 @@ from gym.wrappers import TimeLimit
 import deflector_gym
 from deflector_gym.wrappers import BestRecorder, ExpandObservation
 
-from model import ShallowUQNet
+from model import ShallowUQNet, FCNQNet, FCNQNet_heavy
 from utils import StructureWriter, seed_all
 
 load_dotenv()
@@ -31,6 +32,19 @@ that is, you need to set seed for each worker
 """
 seed_all(42)
 
+ROOT_DIR = '/mnt/8tb'
+TIMEFOLDERNAME = datetime.now().strftime('%Y%m%d_%H%M%S')
+LOG_DIR = '/mnt/8tb/np_struct' + '/' + TIMEFOLDERNAME
+ckpt_folder = 'pirl/SimpleQ_MeentIndex-v0_9f4ca_00000_0_2023-02-01_03-46-50/checkpoint_000196'
+
+os.makedirs(LOG_DIR, exist_ok=True)
+
+FINAL_Q_PATH = os.path.join(
+    ROOT_DIR,
+    ckpt_folder,
+)
+
+
 class Callbacks(DefaultCallbacks):
     """
     logging class for rllib
@@ -42,6 +56,7 @@ class Callbacks(DefaultCallbacks):
     you may feel uncomfortable with this logging procedure, 
     but when distributed training is used, it's inevitable
     """
+
     def on_create_policy(self, *, policy_id, policy) -> None:
         # state_dict = torch.load(
         #     PRETRAINED_MODEL_PATH,
@@ -52,6 +67,7 @@ class Callbacks(DefaultCallbacks):
 
     def on_algorithm_init(self, *, algorithm, **kwargs) -> None:
         print(algorithm.get_policy().model)
+        # seed_all(42)
 
     def _get_max(self, base_env):
         # retrieve `env.best`, where env is wrapped with BestWrapper to record the best structure
@@ -61,35 +77,37 @@ class Callbacks(DefaultCallbacks):
         return best[0], best[1]
 
     def _tb_image(self, structure):
-        # transform sttructure to tensorboard addable image
+        # transform structure to tensorboard addable image
         img = structure[np.newaxis, np.newaxis, :].repeat(32, axis=1)
 
         return img
-
-    def on_learn_on_batch(self, *, policy, train_batch: SampleBatch, result, **kwargs) -> None:
-        pass
-        
-    def on_train_result(self, *, algorithm, result, **kwargs) -> None:
-        pass
 
     def on_episode_start(self, *, worker, base_env, policies, episode, env_index=None, **kwargs) -> None:
         eff, struct = self._get_max(base_env)
 
         episode.custom_metrics['initial_efficiency'] = eff
 
-    def on_episode_end(self, *, worker, base_env, policies, episode, **kwargs,) -> None:
+    def _j(self, a, b):
+        return os.path.join(a, b)
+
+    def on_episode_end(self, *, worker, base_env, policies, episode,
+                       **kwargs, ) -> None:
         eff, struct = self._get_max(base_env)
-        
         episode.custom_metrics['max_efficiency'] = eff
-        
+        filename = 'w' + str(worker.worker_index) + f'_{eff * 100:.6f}'.replace('.', '-')
+        filename = self._j(LOG_DIR, filename)
+        np.save(filename, struct)
+
 
 if __name__ == '__main__':
+    ray.init(local_mode=False)
     stop = {
         "timesteps_total": 200000,
     }
     env_id = 'MeentIndex-v0'
-    env_config = {}
-    model_cls = ShallowUQNet
+    env_config = {'wavelength': 1100, 'desired_angle': 55, 'thickness': 325}
+    model_cls = ShallowUQNet  # model_cls = ShallowUQNet / FCNQNet / FCNQNet_heavy
+
 
     def make_env(config):
         env = deflector_gym.make(env_id, **config)
@@ -101,10 +119,11 @@ if __name__ == '__main__':
         return env
 
 
-    register_env(env_id, make_env)
+    register_env(env_id, lambda c: make_env(env_config))
     ModelCatalog.register_custom_model(model_cls.__name__, model_cls)
 
     from configs.simple_q import multiple_worker as config
+
     config.framework(
         framework='torch'
     ).environment(
@@ -112,13 +131,15 @@ if __name__ == '__main__':
         env_config=env_config,
         normalize_actions=False
     ).callbacks(
-        Callbacks # register logging
+        Callbacks  # register logging
     ).training(
         model={'custom_model': model_cls}
-    ).debugging( 
+    ).debugging(
         # seed=tune.grid_search([1, 2, 3, 4, 5]) # if you want to run experiments with multiple seeds
     )
 
+    algo = config.build()  ##
+    algo.load_checkpoint(FINAL_Q_PATH)  ##
     tuner = tune.Tuner(
         'SimpleQ',
         param_space=config.to_dict(),
@@ -128,11 +149,14 @@ if __name__ == '__main__':
             local_dir=DATA_DIR,
             name='pirl',
             checkpoint_config=air.CheckpointConfig(
+                num_to_keep=5,
+                checkpoint_score_attribute='episode_reward_max',
+                checkpoint_score_order='max',
+                checkpoint_frequency=1,
                 checkpoint_at_end=True,
             ),
         ),
     )
 
-    ray.init(local_mode=False)
     results = tuner.fit()
     ray.shutdown()
