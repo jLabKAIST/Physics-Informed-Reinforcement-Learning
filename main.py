@@ -34,7 +34,7 @@ FINAL_Q_PATH = os.path.join(
 
 PRETRAINED_MODEL_PATH = os.path.join(
     ROOT_DIR,
-    'Jan31_normalized_UNet_256_2man_1100_60_0.004_0.008_stateDict.pt',
+    'May13_normalized_UNet_256_2man_900_50_0.002_0.014_stateDict.pt',
 )
 
 # seed_all(42)
@@ -50,12 +50,12 @@ class Callbacks(DefaultCallbacks):
     but when distributed training is used, it's inevitable
     """
     def on_create_policy(self, *, policy_id, policy) -> None:
-        #state_dict = torch.load(
-        #    PRETRAINED_MODEL_PATH,
-        #    map_location=torch.device('cpu')
-        #)
-        #policy.set_weights(state_dict)
-        pass
+        state_dict = torch.load(
+            PRETRAINED_MODEL_PATH,
+            map_location=torch.device('cpu')
+        )
+        policy.set_weights(state_dict)
+        # pass
 
     def on_algorithm_init(self, *, algorithm, **kwargs) -> None:
         print(algorithm.get_policy().model)
@@ -101,8 +101,9 @@ if __name__ == '__main__':
         "timesteps_total": 200000,
     }
     env_id = 'MeentIndex-v0'
-    env_config = {'wavelength': 1100, 'desired_angle': 55, 'thickness': 325}
+    env_config = {'wavelength': 900, 'desired_angle': 50, 'thickness': 325}
     model_cls = ShallowUQNet  #model_cls = ShallowUQNet / FCNQNet / FCNQNet_heavy
+
 
     def make_env(config):
         e = deflector_gym.make(env_id, **config)
@@ -128,9 +129,8 @@ if __name__ == '__main__':
     ).debugging( 
         # seed=tune.grid_search([1, 2, 3, 4, 5]) # if you want to run experiments with multiple seeds
     )
-
-    algo = config.build() ##
-    algo.load_checkpoint(FINAL_Q_PATH) ##
+    # algo = config.build() # transfer learning with fully trained agent network
+    # algo.load_checkpoint(FINAL_Q_PATH) # transfer learning with fully trained agent network
     tuner = tune.Tuner(
         'SimpleQ',
         param_space=config.to_dict(),
