@@ -1,5 +1,6 @@
 import argparse
 from datetime import datetime
+from pathlib import Path
 import os
 from operator import itemgetter
 
@@ -95,7 +96,8 @@ if __name__ == '__main__':
         help='absolute path to checkpoint file to do transfer learning'
     )
     parser.add_argument(
-        '--pretrained_ckpt', type=str, default='pretrained/pretrained_1100nm_60degree.pt',
+        '--pretrained_ckpt', type=str,
+        default=f'{Path(__file__).resolve().parent}/pretrained/pretrained_1100nm_60degree.pt',
         help='absolute path to checkpoint file of pretrained model'
     )
     parser.add_argument(
@@ -116,6 +118,7 @@ if __name__ == '__main__':
     )
 
     args = parser.parse_args()
+
     DATA_DIR = args.data_dir
     LOG_DIR = f"{args.data_dir}/{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     PRETRAINED_CKPT = args.pretrained_ckpt
@@ -169,7 +172,7 @@ if __name__ == '__main__':
         run_config=air.RunConfig(
             stop=stop,
             local_dir=DATA_DIR,
-            name='pirl',
+            name=LOG_DIR,
             checkpoint_config=air.CheckpointConfig(
                 num_to_keep=5,
                 checkpoint_score_attribute='episode_reward_max',
