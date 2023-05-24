@@ -1,0 +1,3 @@
+[submodule "deflector-gym"]
+	path = deflector-gym
+	url = git@github.com:kc-ml2/deflector-gym.git

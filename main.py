@@ -1,7 +1,7 @@
+import argparse
 from datetime import datetime
 import os
 from operator import itemgetter
-from dotenv import load_dotenv
 
 import numpy as np
 
@@ -12,37 +12,24 @@ from ray import air, tune
 from ray.tune import register_env
 
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
-from ray.rllib.policy.sample_batch import SampleBatch
 from ray.rllib.models import ModelCatalog
 
 from gym.wrappers import TimeLimit
 import deflector_gym
 from deflector_gym.wrappers import BestRecorder, ExpandObservation
 
-from model import ShallowUQNet, FCNQNet, FCNQNet_heavy
+from model import ShallowUQNet
 from utils import StructureWriter, seed_all
 
-load_dotenv()
-DATA_DIR = os.environ['DATA_DIR']
-PRETRAINED_MODEL_PATH = os.environ['PRETRAINED_MODEL_PATH']
+DATA_DIR = None
+PRETRAINED_CKPT = None
+LOG_DIR = None
 
 """
 seeding needs to be taken care when multiple workers are used,
 that is, you need to set seed for each worker
 """
 seed_all(42)
-
-ROOT_DIR = '/mnt/8tb'
-TIMEFOLDERNAME = datetime.now().strftime('%Y%m%d_%H%M%S')
-LOG_DIR = '/mnt/8tb/np_struct' + '/' + TIMEFOLDERNAME
-ckpt_folder = 'pirl/SimpleQ_MeentIndex-v0_9f4ca_00000_0_2023-02-01_03-46-50/checkpoint_000196'
-
-os.makedirs(LOG_DIR, exist_ok=True)
-
-FINAL_Q_PATH = os.path.join(
-    ROOT_DIR,
-    ckpt_folder,
-)
 
 
 class Callbacks(DefaultCallbacks):
@@ -58,12 +45,11 @@ class Callbacks(DefaultCallbacks):
     """
 
     def on_create_policy(self, *, policy_id, policy) -> None:
-        # state_dict = torch.load(
-        #     PRETRAINED_MODEL_PATH,
-        #     map_location=torch.device('cpu')
-        # )
-        # policy.set_weights(state_dict)
-        pass
+        state_dict = torch.load(
+            PRETRAINED_CKPT,
+            map_location=torch.device('cpu')
+        )
+        policy.set_weights(state_dict)
 
     def on_algorithm_init(self, *, algorithm, **kwargs) -> None:
         print(algorithm.get_policy().model)
@@ -90,8 +76,7 @@ class Callbacks(DefaultCallbacks):
     def _j(self, a, b):
         return os.path.join(a, b)
 
-    def on_episode_end(self, *, worker, base_env, policies, episode,
-                       **kwargs, ) -> None:
+    def on_episode_end(self, *, worker, base_env, policies, episode, **kwargs, ) -> None:
         eff, struct = self._get_max(base_env)
         episode.custom_metrics['max_efficiency'] = eff
         filename = 'w' + str(worker.worker_index) + f'_{eff * 100:.6f}'.replace('.', '-')
@@ -100,14 +85,48 @@ class Callbacks(DefaultCallbacks):
 
 
 if __name__ == '__main__':
-    ray.init(local_mode=False)
-    stop = {
-        "timesteps_total": 200000,
-    }
-    env_id = 'MeentIndex-v0'
-    env_config = {'wavelength': 1100, 'desired_angle': 55, 'thickness': 325}
-    model_cls = ShallowUQNet  # model_cls = ShallowUQNet / FCNQNet / FCNQNet_heavy
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--data_dir', type=str, default='run',
+        help='absolute path to data directory'
+    )
+    parser.add_argument(
+        '--transfer_ckpt', type=str, default=None,
+        help='absolute path to checkpoint file to do transfer learning'
+    )
+    parser.add_argument(
+        '--pretrained_ckpt', type=str, default='pretrained/pretrained_1100nm_60degree.pt',
+        help='absolute path to checkpoint file of pretrained model'
+    )
+    parser.add_argument(
+        '--wavelength', type=int, default=1100,
+        help='wavelength of the incident light'
+    )
+    parser.add_argument(
+        '--angle', type=int, default=60,
+        help='target deflection angle condition'
+    )
+    parser.add_argument(
+        '--thickness', type=int, default=325,
+        help='thickness of the pillar'
+    )
+    parser.add_argument(
+        '--train_steps', type=int, default=200000,
+        help='number of training steps'
+    )
 
+    args = parser.parse_args()
+    DATA_DIR = args.data_dir
+    LOG_DIR = f"{args.data_dir}/{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    PRETRAINED_CKPT = args.pretrained_ckpt
+
+    os.makedirs(LOG_DIR, exist_ok=True)
+
+    ray.init(local_mode=False)
+
+    env_id = 'MeentIndex-v0'
+    env_config = {'wavelength': args.wavelength, 'desired_angle': args.angle, 'thickness': args.thickness}
+    model_cls = ShallowUQNet  # model_cls = ShallowUQNet / FCNQNet / FCNQNet_heavy
 
     def make_env(config):
         env = deflector_gym.make(env_id, **config)
@@ -117,7 +136,6 @@ if __name__ == '__main__':
         env = TimeLimit(env, max_episode_steps=128)
 
         return env
-
 
     register_env(env_id, lambda c: make_env(env_config))
     ModelCatalog.register_custom_model(model_cls.__name__, model_cls)
@@ -138,8 +156,12 @@ if __name__ == '__main__':
         # seed=tune.grid_search([1, 2, 3, 4, 5]) # if you want to run experiments with multiple seeds
     )
 
-    algo = config.build()  ##
-    algo.load_checkpoint(FINAL_Q_PATH)  ##
+    algo = config.build()
+    if args.transfer_ckpt:
+        algo.load_checkpoint(args.transfer_ckpt)
+    stop = {
+        "timesteps_total": args.train_steps,
+    }
     tuner = tune.Tuner(
         'SimpleQ',
         param_space=config.to_dict(),
